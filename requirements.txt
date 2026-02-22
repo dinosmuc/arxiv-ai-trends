@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+plotly
+jupyterlab
+umap-learn
+hdbscan
+arxiv
+sentence-transformers
+spacy
+ruff
+pre-commit

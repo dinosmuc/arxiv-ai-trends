@@ -1,0 +1,15 @@
+name: arxiv-trends
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - scikit-learn
+  - plotly
+  - matplotlib
+  - numpy
+  - seaborn
+  - jupyterlab
+  - pandas
+  - umap-learn
+  - hdbscan
+prefix: /home/dino/miniforge3/envs/arxiv-trends
