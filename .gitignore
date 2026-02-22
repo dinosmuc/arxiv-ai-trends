@@ -1,0 +1,17 @@
+# Data
+data/
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Project context (local only)
+project_context.md
