@@ -12,3 +12,4 @@ sentence-transformers
 spacy
 ruff
 pre-commit
+matplotlib-venn

@@ -12,3 +12,4 @@ dependencies:
   - pandas
   - umap-learn
   - hdbscan
+  - matplotlib-venn
