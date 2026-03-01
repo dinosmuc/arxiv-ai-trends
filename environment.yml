@@ -13,3 +13,4 @@ dependencies:
   - umap-learn
   - hdbscan
   - matplotlib-venn
+  - langdetect
