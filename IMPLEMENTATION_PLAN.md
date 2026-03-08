@@ -34,9 +34,9 @@ Before starting any phase, read this section to understand the overall file mana
 These are the data pipeline. They don't need splitting, just modifications:
 
 - **01_data_collection.ipynb** — No changes needed. Don't touch it.
-- **02_exploratory_analysis.ipynb** — No code changes. Only markdown rewrite in Phase 8. Rerun at the end to regenerate plots with clean outputs.
-- **03_preprocessing.ipynb** — Add `embed_text` column and `is_survey` flag (Phase 0). Rerun to regenerate `arxiv_clean.csv` and re-embed with title+abstract. The old embedding `.npy` files get overwritten.
-- **04_dimensionality_reduction.ipynb** — Add 30d/40d UMAP + n_neighbors sweep (Phase 1). Rerun. Old 20d/2d/3d files get regenerated too since the input embeddings changed in Phase 0.
+- **02_exploratory_analysis.ipynb** — No code changes. Only markdown rewrite in the final phase. Rerun at the end to regenerate plots with clean outputs.
+- **03_preprocessing.ipynb** — Replace inline code with `src.preprocess` imports, add `embed_text` column and `is_survey` flag. Rerun to regenerate `arxiv_clean.csv` and re-embed with title+abstract.
+- **04_dimensionality_reduction.ipynb** — Replace inline code with `src.features.reduce_umap` imports, add 30d/40d + n_neighbors sweep. Rerun.
 
 ### Notebook 05: Archive the old one, create new ones from it
 
@@ -44,741 +44,45 @@ This is the only notebook that needs splitting. It's a monolith doing 5 jobs (cl
 
 1. **Create** `notebooks/archive/` directory
 2. **Move** `05_clustering_and_results.ipynb` into `notebooks/archive/` (keep it for reference — you'll copy cells from it)
-3. **Create fresh** `05_clustering.ipynb` — copy over the clustering + evaluation cells from the old 05, then add BERTopic, topic coherence, and the dendrogram
-4. **Create fresh** `06_validation.ipynb` — entirely new content (noise analysis, ARI/NMI, cross-embedding agreement)
-5. **Create fresh** `07_trends_and_insights.ipynb` — copy the trend/recommendation cells from the old 05, then rework them with regression, sensitivity analysis, seasonality normalization
+3. **Create fresh** `05_clustering.ipynb` — copy over the clustering + evaluation cells from the old 05, then add BERTopic, topic coherence, and the dendrogram. Use `src/` imports from the start.
+4. **Create fresh** `06_validation.ipynb` — entirely new content (noise analysis, ARI/NMI, cross-embedding agreement). Use `src/` imports from the start.
+5. **Create fresh** `07_trends_and_insights.ipynb` — copy the trend/recommendation cells from the old 05, then rework them with regression, sensitivity analysis, seasonality normalization. Use `src/` imports from the start.
 
-### Why not start everything from scratch?
+### Why src/ modules are built FIRST (Phase 0)
 
-Notebooks 01-04 have working code with correct outputs. Rebuilding them from zero wastes time and risks introducing bugs in code that already works. Modify and rerun is safer and faster.
+The function signatures are already known — `filter_papers()`, `clean_abstracts()`, `reduce_umap()`, `get_cluster_top_terms()`, `compute_coherence()`, etc. They won't change. By building `src/` modules first, every notebook uses shared imports from day one. This eliminates the risk of refactoring inline code later and silently introducing differences (a changed default parameter, a different sort order, a missing filter).
 
-Notebook 05 is different — splitting a monolith by surgical deletion leaves messy artifacts (orphaned variables, broken cell dependencies). Copying the relevant cells into clean new notebooks is cleaner.
+If you build notebooks with inline code first and refactor later, you'd have to do an expensive full rerun (~5+ hours) just to verify the refactored imports produce identical output. Building `src/` first avoids that entirely.
 
 ### Execution order summary
 
 ```
-1. Modify 03 → rerun                    (~2.5 hours, mostly KaLM embedding)
-2. Modify 04 → rerun                    (~2-3 hours, UMAP runs)
+1. Fill src/ modules (preprocess, features, visualize)    (~30 min, no rerun)
+2. Pin requirements, Makefile, README skeleton             (~15 min, no rerun)
+3. Modify 03 with src/ imports + new features → rerun     (~2.5 hours)
+4. Modify 04 with src/ imports + new features → rerun     (~2-3 hours)
    ⚠ CHECKPOINT: Quick-test HDBSCAN on new KaLM UMAP.
      Compare silhouette to old 0.5073. If worse, adjust before continuing.
-3. Archive old 05, create new 05 → run  (~1 hour, clustering)
-4. Create new 06 → run                  (~10 minutes, validation)
-5. Create new 07 → run                  (~5 minutes, trends)
-6. Refactor src/ modules                (no rerun needed)
-7. Fix requirements, add Makefile, write README
-8. Rewrite markdown in ALL notebooks    (01-07)
-9. Final rerun of ALL notebooks         (ensures cell outputs match final markdown)
+5. Archive old 05, create new 05 with src/ imports → run  (~1 hour)
+6. Create new 06 with src/ imports → run                  (~10 minutes)
+7. Create new 07 with src/ imports → run                  (~5 minutes)
+8. Rewrite markdown in ALL notebooks (01-07)
+9. Final rerun of ALL notebooks                           (ensures outputs match markdown)
 ```
 
-The checkpoint after step 2 is important — before spending hours on steps 3-7, verify that the new embeddings + UMAP settings actually improved results. If silhouette dropped, investigate before building everything on top of bad foundations.
+The checkpoint after step 4 is important — before spending hours on steps 5-7, verify that the new embeddings + UMAP settings actually improved results. If silhouette dropped, investigate before building everything on top of bad foundations.
 
 The final rerun in step 9 ensures all cell outputs in the notebooks match the rewritten markdown narrative. You don't want stale outputs from an earlier run sitting next to new commentary.
 
 ---
 
-## Phase 0 — Preprocessing Improvement (Title + Abstract Embeddings)
+## Phase 0 — Build src/ Modules + Reproducibility
 
-**Why this is Phase 0:** This changes the INPUT to all embeddings, which is the most upstream change possible. Titles are often more discriminative than abstracts alone — a title like "DPO-Augmented RLHF for Code Generation" carries dense topic signal that might be diluted in a 200-word abstract. This is a small change that could meaningfully improve every downstream result.
+**Why this is Phase 0:** Building the shared modules first means every notebook uses `src/` imports from day one. No "refactor later and hope it matches" risk. The function signatures are known — only the notebooks that call them will evolve.
 
-### Step 0.1 — Add title+abstract embedding input to notebook 03
-
-**File:** `notebooks/03_preprocessing.ipynb`
-
-**What to do:**
-
-After the existing `abstract_clean` column is created, add a new column that concatenates title and abstract:
-
-```python
-df["embed_text"] = df["title"] + ". " + df["abstract_clean"]
-print(f"Sample:\n{df['embed_text'].iloc[0][:200]}...")
-```
-
-Save this column in the output CSV (`arxiv_clean.csv`). The `abstract_lemma` column stays unchanged — TF-IDF still uses the lemmatized abstract only, since titles are short and would add noise to bag-of-words.
-
-### Step 0.2 — Re-embed with title+abstract
-
-**File:** `notebooks/03_preprocessing.ipynb`
-
-**What to do:**
-
-Change the MiniLM and KaLM embedding cells to use `embed_text` instead of `abstract_clean`:
-
-```python
-# MiniLM
-minilm_embeddings = model_mini.encode(
-    df["embed_text"].tolist(),  # was abstract_clean
-    batch_size=256,
-    show_progress_bar=True,
-)
-
-# KaLM
-kalm_embeddings = model_kalm.encode(
-    df["embed_text"].tolist(),  # was abstract_clean
-    batch_size=64,
-    show_progress_bar=True,
-)
-```
-
-Save as the same filenames (`minilm_embeddings.npy`, `kalm_embeddings.npy`). The old files get overwritten.
-
-**Important:** TF-IDF still uses `abstract_lemma`, NOT `embed_text`. TF-IDF on raw titles would just add noise (short text, no lemmatization). Only neural embeddings benefit from title+abstract.
-
-**Note:** KaLM embedding takes ~2 hours on GPU. MiniLM takes ~5 minutes. Plan accordingly.
-
-### Step 0.3 — Filter out survey papers (flag, don't remove)
-
-**File:** `notebooks/03_preprocessing.ipynb`
-
-**What to do:**
-
-Survey/review papers span multiple topics by definition and confuse clustering. Detect them:
-
-```python
-survey_pattern = r"\b(survey|review|overview|tutorial|systematic review|literature review|comprehensive review|state of the art|sota review)\b"
-df["is_survey"] = df["title"].str.contains(survey_pattern, case=False, na=False)
-print(f"Survey papers: {df['is_survey'].sum():,} ({df['is_survey'].mean():.1%})")
-```
-
-**Do NOT remove them** from the dataset. Instead, flag them so you can:
-1. In notebook 05: compare clustering quality with and without surveys (run HDBSCAN on `df[~df['is_survey']]` and see if noise drops)
-2. In notebook 06: check if surveys are disproportionately in the noise category
-3. In notebook 07: exclude surveys from trend counts if they distort growth rates
-
-Save the `is_survey` column in `arxiv_clean.csv`.
-
-**Expected outcome:** Embeddings now use richer input (title+abstract), and surveys are flagged for later analysis.
-
----
-
-## Phase 1 — UMAP Hyperparameter & Dimension Experiment
-
-**Why this is Phase 1:** UMAP settings are the most upstream change after embeddings. If different parameters give better clusters, it changes ALL downstream analysis. Do this before clustering so you only cluster once with the best settings.
-
-### Step 1.1 — Add 30d and 40d UMAP to notebook 04
-
-**File:** `notebooks/04_dimensionality_reduction.ipynb`
-
-**What to do:**
-
-After the existing UMAP 20d cell (the one that produces `tfidf_umap20`, `minilm_umap20`, `kalm_umap20`), add new cells that run UMAP at 30d and 40d for all three embeddings. Use the same parameters as existing 20d (`n_neighbors=15`, `min_dist=0.0`, `random_state=42`).
-
-The inputs are:
-- `tfidf_svd` (the 500d SVD-reduced TF-IDF matrix)
-- `minilm_emb` (raw 384d MiniLM embeddings — now re-embedded with title+abstract from Phase 0)
-- `kalm_emb` (raw 896d KaLM embeddings — now re-embedded with title+abstract from Phase 0)
-
-Generate and save to `data/processed/`:
-- `tfidf_umap30.npy`, `minilm_umap30.npy`, `kalm_umap30.npy`
-- `tfidf_umap40.npy`, `minilm_umap40.npy`, `kalm_umap40.npy`
-
-**Important:** Keep the existing 20d, 2d, and 3d UMAP outputs. Regenerate the 20d ones too since the embeddings changed in Phase 0. The 2d and 3d are for visualization only and don't need 30d/40d variants.
-
-### Step 1.2 — UMAP n_neighbors sweep
-
-**File:** `notebooks/04_dimensionality_reduction.ipynb`
-
-**What to do:**
-
-You currently fixed `n_neighbors=15` everywhere. With 181k papers, this is quite local — UMAP only looks at each point's 15 nearest neighbors to build the graph. Higher values capture more global structure.
-
-Run a sweep on KaLM embeddings only (to save time), at the winning dimensionality from Step 1.1 (or just use 20d for now):
-
-```python
-import umap
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-
-results = []
-for n_neighbors in [15, 30, 50]:
-    for min_dist in [0.0, 0.05]:
-        reducer = umap.UMAP(
-            n_components=20,  # or whatever dim you're testing
-            n_neighbors=n_neighbors,
-            min_dist=min_dist,
-            random_state=42,
-        )
-        reduced = reducer.fit_transform(kalm_emb)
-
-        # Quick K-Means eval to compare
-        km = KMeans(n_clusters=24, random_state=42, n_init=10)
-        labels = km.fit_predict(reduced)
-        sil = silhouette_score(reduced, labels, sample_size=10000)
-
-        results.append({
-            "n_neighbors": n_neighbors,
-            "min_dist": min_dist,
-            "silhouette": sil,
-        })
-        print(f"n_neighbors={n_neighbors}, min_dist={min_dist}: sil={sil:.4f}")
-```
-
-This is 6 runs. Pick the best `n_neighbors`/`min_dist` combo. If `n_neighbors=30` or `50` wins, regenerate ALL UMAP outputs (20d, 30d, 40d, 2d, 3d) with the winning parameters.
-
-**Note:** Each UMAP run on 181k x 896d takes ~15-30 minutes. The full sweep is ~2-3 hours. If time is tight, just test `n_neighbors` in [15, 30] with `min_dist=0.0` (2 runs).
-
-### Step 1.3 — Compare clustering quality across dimensions
-
-**File:** `notebooks/04_dimensionality_reduction.ipynb` (add at the end)
-
-**What to do:**
-
-Run HDBSCAN (`min_cluster_size=1000`, `min_samples=10`) on KaLM embeddings at all three dimensionalities (20d, 30d, 40d), using the best `n_neighbors`/`min_dist` from Step 1.2. For each, compute:
-- Number of clusters
-- Noise percentage
-- Silhouette score (on non-noise points, `sample_size=10000`)
-- Davies-Bouldin index (on non-noise points)
-
-Also run K-Means (k=24) on each dimensionality and compare. This gives you a 2x3 grid (2 algorithms x 3 dimensionalities).
-
-Print a comparison table:
-
-```
-Dims  Algorithm  Clusters  Noise%  Silhouette  Davies-Bouldin
-20    HDBSCAN    41        36.9%   0.5073      0.7358
-30    HDBSCAN    ??        ??      ??          ??
-40    HDBSCAN    ??        ??      ??          ??
-20    K-Means    24        0%      0.3936      0.9448
-30    K-Means    24        0%      ??          ??
-40    K-Means    24        0%      ??          ??
-```
-
-**Decision:** Pick the dimensionality that gives the best silhouette/DB tradeoff. Add a markdown cell documenting your decision and reasoning. If 20d was already best, great — you've now proven it empirically rather than assumed it.
-
-**Expected outcome:** You know the optimal UMAP dimensionality AND the optimal `n_neighbors`/`min_dist`, and have the data to justify both choices.
-
----
-
-## Phase 2 — Final Clustering (Full 12-Combination Comparison)
-
-**Why 12 now instead of 9:** You're adding BERTopic as a fourth algorithm. BERTopic is the state-of-the-art for exactly this task — neural topic modeling. It uses HDBSCAN internally but adds class-based TF-IDF (c-TF-IDF) for automatic topic labeling and has built-in topic evolution tracking.
-
-### Step 2.1 — Add BERTopic to notebook 05
-
-**File:** `notebooks/05_clustering_and_results.ipynb`
-
-**What to do:**
-
-First, add `bertopic` to `requirements.txt`.
-
-After the existing HDBSCAN section, add a new section for BERTopic. BERTopic wraps UMAP + HDBSCAN + c-TF-IDF into one pipeline, but you can pass your own pre-computed components:
-
-```python
-from bertopic import BERTopic
-from umap import UMAP
-from hdbscan import HDBSCAN
-
-# Use your pre-computed UMAP and let BERTopic do HDBSCAN + c-TF-IDF
-for name in ["TF-IDF", "MiniLM", "KaLM"]:
-    if name == "TF-IDF":
-        emb = tfidf_svd  # 500d SVD-reduced
-    elif name == "MiniLM":
-        emb = minilm_emb
-    else:
-        emb = kalm_emb
-
-    # Let BERTopic use your UMAP settings but handle clustering internally
-    umap_model = UMAP(
-        n_components=WINNING_DIM,  # from Phase 1
-        n_neighbors=WINNING_NEIGHBORS,  # from Phase 1
-        min_dist=0.0,
-        random_state=42,
-    )
-    hdbscan_model = HDBSCAN(
-        min_cluster_size=1000,
-        min_samples=10,
-        metric="euclidean",
-    )
-
-    topic_model = BERTopic(
-        umap_model=umap_model,
-        hdbscan_model=hdbscan_model,
-        calculate_probabilities=False,
-        verbose=True,
-    )
-    topics, probs = topic_model.fit_transform(
-        df["abstract_clean"].tolist(),
-        embeddings=emb,
-    )
-
-    n_topics = len(set(topics)) - (1 if -1 in topics else 0)
-    noise_pct = (np.array(topics) == -1).mean() * 100
-    print(f"BERTopic + {name}: {n_topics} topics, {noise_pct:.1f}% noise")
-
-    # BERTopic gives you automatic topic labels via c-TF-IDF
-    print(topic_model.get_topic_info().head(15))
-```
-
-**Key BERTopic features to show:**
-- `topic_model.get_topic_info()` — automatic topic labels with representative words
-- `topic_model.visualize_topics()` — interactive topic similarity map
-- `topic_model.visualize_hierarchy()` — hierarchical topic structure (dendrogram)
-- `topic_model.topics_over_time(df["abstract_clean"].tolist(), df["published"].tolist())` — topic evolution chart
-
-These are built-in and require zero extra code. They give you automatic topic labels (no Claude API needed for BERTopic clusters), topic evolution visualization, and hierarchical topic structure — all for free.
-
-### Step 2.2 — Full comparison table (12 combinations)
-
-**File:** `notebooks/05_clustering_and_results.ipynb`
-
-**What to do:**
-
-Update the evaluation comparison to include BERTopic. You now have 3 embeddings x 4 algorithms = 12 combinations. Compute silhouette, Davies-Bouldin, and Calinski-Harabasz for all 12. For HDBSCAN and BERTopic, compute metrics on non-noise points only.
-
-Also add **Topic Coherence (c_v score)** as a fourth metric. Silhouette measures geometric cluster quality; topic coherence measures whether the top words in each cluster actually co-occur in real text — it's more meaningful for topic models.
-
-```python
-from gensim.models.coherencemodel import CoherenceModel
-from gensim.corpora import Dictionary
-
-def compute_coherence(df, labels, text_col="abstract", n_terms=10):
-    """Compute c_v topic coherence for a clustering."""
-    # Tokenize
-    texts = [doc.split() for doc in df[text_col]]
-    dictionary = Dictionary(texts)
-
-    # Get top terms per cluster
-    topics = []
-    for label in sorted(set(labels)):
-        if label == -1:
-            continue
-        mask = labels == label
-        cluster_text = " ".join(df.loc[mask, text_col].tolist())
-        # Use TF-IDF to get top terms
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        tfidf = TfidfVectorizer(max_features=10000, stop_words="english")
-        vec = tfidf.fit_transform([cluster_text])
-        terms = tfidf.get_feature_names_out()
-        scores = vec.toarray().flatten()
-        top_idx = scores.argsort()[-n_terms:][::-1]
-        topics.append([terms[j] for j in top_idx])
-
-    cm = CoherenceModel(
-        topics=topics,
-        texts=texts,
-        dictionary=dictionary,
-        coherence="c_v",
-    )
-    return cm.get_coherence()
-```
-
-Add `gensim` to `requirements.txt`.
-
-The final comparison table should look like:
-
-```
-Embedding  Algorithm  k   Silhouette  Davies-Bouldin  Calinski-Harabasz  Coherence  Noise%
-TF-IDF     K-Means    25  0.3299      0.9536          33534              ?.????     0.0
-TF-IDF     GMM        22  0.3059      1.0927          29914              ?.????     0.0
-TF-IDF     HDBSCAN    39  0.5139      0.6605          33993              ?.????     45.1
-TF-IDF     BERTopic   ??  ?.????      ?.????          ?.????             ?.????     ?.?
-MiniLM     K-Means    29  ...
-...
-KaLM       BERTopic   ??  ...
-```
-
-### Step 2.3 — Select best combination and re-label
-
-**File:** `notebooks/05_clustering_and_results.ipynb`, `src/label.py`
-
-**What to do:**
-
-Based on the 12-combination table, select the best primary and secondary clustering. Write a markdown cell explaining the decision.
-
-If BERTopic wins, note that it provides its own automatic labels via c-TF-IDF — you still run Claude Opus labeling for richer descriptions, but you can compare BERTopic's auto-labels vs Claude's labels as a sanity check.
-
-If HDBSCAN is still the winner, re-run Claude Opus labeling (the clusters likely changed because embeddings changed in Phase 0). Use the existing `src/label.py` module.
-
-Compare old labels vs new labels in a markdown cell. Note which clusters merged, split, or shifted.
-
-### Step 2.4 — Hierarchical topic structure
-
-**File:** `notebooks/05_clustering_and_results.ipynb`
-
-**What to do:**
-
-After final clustering, build a dendrogram showing how topics relate to each other. This turns your flat list of 41 topics into a taxonomy of AI research.
-
-```python
-from scipy.cluster.hierarchy import linkage, dendrogram
-from scipy.spatial.distance import pdist
-
-# Compute centroid of each cluster in the UMAP embedding space
-centroids = []
-cluster_names = []
-for label in sorted(set(final_labels)):
-    if label == -1:
-        continue
-    mask = final_labels == label
-    centroids.append(kalm_umap_final[mask].mean(axis=0))
-    cluster_names.append(label_info[label]["label"])
-
-centroids = np.array(centroids)
-
-# Hierarchical clustering on centroids
-Z = linkage(centroids, method="ward")
-
-fig, ax = plt.subplots(figsize=(16, 10))
-dendrogram(
-    Z,
-    labels=cluster_names,
-    leaf_rotation=90,
-    leaf_font_size=8,
-    ax=ax,
-)
-ax.set_title("Hierarchical Structure of AI Research Topics")
-ax.set_ylabel("Ward Distance")
-plt.tight_layout()
-plt.show()
-```
-
-This shows, for example, that "LLM Reasoning" and "LLM Agents" are siblings, which validates the clustering semantically. If unrelated topics are siblings, something is wrong.
-
-If you used BERTopic, you get this for free with `topic_model.visualize_hierarchy()`.
-
-**Expected outcome:** You have a complete, well-justified clustering with 4 algorithms compared, topic coherence measured, and a hierarchical topic structure visualized.
-
----
-
-## Phase 3 — Noise Investigation
-
-**Why:** 37% of papers are labeled as noise. Right now you just assert "it's a feature." This phase turns that into a demonstrated finding.
-
-### Step 3.1 — Create notebook 06_validation.ipynb
-
-**File:** `notebooks/06_validation.ipynb` (NEW)
-
-**What to do:**
-
-Create a new notebook. Start with a markdown cell:
-
-> # 06 — Validation & Robustness
->
-> I need to prove that my clusters are trustworthy. This notebook investigates the noise rate, validates clusters against external labels, and checks whether different embeddings agree.
-
-Load the cleaned dataset (`arxiv_clean.csv`), the final HDBSCAN labels (KaLM), the K-Means labels, the BERTopic labels, and the ArXiv primary categories. Also load all the label JSONs.
-
-### Step 3.2 — Noise composition analysis
-
-**File:** `notebooks/06_validation.ipynb`
-
-**What to do:**
-
-Take all papers where `hdbscan_label == -1` (the noise papers). Analyze them:
-
-1. **Category distribution of noise vs non-noise:**
-   ```python
-   noise_cats = df[df["cluster"] == -1]["primary_category"].value_counts(normalize=True)
-   clean_cats = df[df["cluster"] != -1]["primary_category"].value_counts(normalize=True)
-   ```
-   Plot these side by side as horizontal bar charts. Are certain categories (like cs.AI, which is broad and interdisciplinary) over-represented in noise?
-
-2. **Noise rate over time:**
-   ```python
-   monthly_noise_rate = df.groupby("month").apply(lambda x: (x["cluster"] == -1).mean())
-   ```
-   Plot this as a line chart. Is noise growing (meaning new topics are emerging that don't fit existing clusters) or stable?
-
-3. **Top TF-IDF terms in noise papers:**
-   Run TF-IDF on just the noise papers' abstracts. What are the top 30 terms? Are they generic (suggesting truly diffuse papers) or do they hint at hidden topics?
-
-4. **Key term frequency in noise vs clustered:**
-   For each of the key terms from notebook 02 (LLM, diffusion, transformer, agent, multimodal, RAG, fine-tuning, reasoning, reinforcement learning, robot), compute what fraction of papers mentioning that term ended up as noise. Some terms might have disproportionately high noise rates, revealing which topics HDBSCAN struggles with.
-
-   ```python
-   key_terms = {
-       "LLM": r"\bLLM[s]?\b",
-       "diffusion": r"\bdiffusion\b",
-       "transformer": r"\btransformer[s]?\b",
-       "agent": r"\bagent[s]?\b",
-       "multimodal": r"\bmultimodal\b",
-       "RAG": r"\bRAG\b",
-       "fine-tun": r"\bfine.tun",
-       "reasoning": r"\breasoning\b",
-       "reinforcement learning": r"\breinforcement learning\b",
-       "robot": r"\brobot[s]?\b",
-   }
-
-   for term, pattern in key_terms.items():
-       hits = df[df["abstract"].str.contains(pattern, case=False, na=False)]
-       noise_rate = (hits["cluster"] == -1).mean()
-       print(f"{term}: {noise_rate:.1%} noise rate ({len(hits):,} papers)")
-   ```
-
-5. **Survey papers in noise:**
-   Using the `is_survey` flag from Phase 0:
-   ```python
-   survey_noise_rate = df[df["is_survey"]]["cluster"].eq(-1).mean()
-   non_survey_noise_rate = df[~df["is_survey"]]["cluster"].eq(-1).mean()
-   print(f"Survey papers noise rate: {survey_noise_rate:.1%}")
-   print(f"Non-survey papers noise rate: {non_survey_noise_rate:.1%}")
-   ```
-   If surveys have a much higher noise rate, that explains part of the 37%.
-
-### Step 3.3 — Sub-clustering the noise
-
-**File:** `notebooks/06_validation.ipynb`
-
-**What to do:**
-
-Run HDBSCAN with smaller `min_cluster_size` values on ONLY the noise papers' KaLM UMAP embeddings. This tests whether the noise contains coherent sub-groups that were just below the `min_cluster_size=1000` threshold.
-
-```python
-noise_mask = hdbscan_labels == -1
-noise_embeddings = kalm_umap_final[noise_mask]  # use whatever dim won in Phase 1
-
-for ms in [200, 300, 500]:
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=ms, min_samples=10)
-    sub_labels = clusterer.fit_predict(noise_embeddings)
-    n_sub = len(set(sub_labels)) - (1 if -1 in sub_labels else 0)
-    still_noise = (sub_labels == -1).mean() * 100
-    print(f"min_size={ms}: {n_sub} sub-clusters, {still_noise:.1f}% still noise")
-```
-
-If coherent sub-clusters emerge, extract their top TF-IDF terms using `get_cluster_top_terms` from `src/features.py`. Show the top 5-7 terms for each sub-cluster. This tells you whether `min_cluster_size=1000` was too aggressive or whether the noise is genuinely diffuse.
-
-Write a markdown conclusion: "X% of noise papers form coherent sub-topics below my size threshold (topics like [list examples]). The remaining Y% are genuinely interdisciplinary papers that span multiple research areas."
-
-**Expected outcome:** You can now make an evidence-based statement about your noise rate.
-
----
-
-## Phase 4 — External Validation
-
-### Step 4.1 — Cluster agreement with ArXiv categories (ARI/NMI)
-
-**File:** `notebooks/06_validation.ipynb`
-
-**What to do:**
-
-Compute Adjusted Rand Index (ARI) and Normalized Mutual Information (NMI) between your cluster labels and ArXiv's `primary_category`. Do this for all four algorithms.
-
-```python
-from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
-
-# HDBSCAN (non-noise only)
-mask = hdbscan_labels != -1
-ari_hdbscan = adjusted_rand_score(df.loc[mask, "primary_category"], hdbscan_labels[mask])
-nmi_hdbscan = normalized_mutual_info_score(df.loc[mask, "primary_category"], hdbscan_labels[mask])
-
-# K-Means (all papers)
-ari_kmeans = adjusted_rand_score(df["primary_category"], kmeans_labels)
-nmi_kmeans = normalized_mutual_info_score(df["primary_category"], kmeans_labels)
-
-# GMM (all papers)
-ari_gmm = adjusted_rand_score(df["primary_category"], gmm_labels)
-nmi_gmm = normalized_mutual_info_score(df["primary_category"], gmm_labels)
-
-# BERTopic (non-noise only)
-bt_mask = np.array(bertopic_labels) != -1
-ari_bt = adjusted_rand_score(df.loc[bt_mask, "primary_category"], np.array(bertopic_labels)[bt_mask])
-nmi_bt = normalized_mutual_info_score(df.loc[bt_mask, "primary_category"], np.array(bertopic_labels)[bt_mask])
-
-print(f"{'Algorithm':<12} {'ARI':>8} {'NMI':>8}")
-print("-" * 30)
-print(f"{'HDBSCAN':<12} {ari_hdbscan:>8.4f} {nmi_hdbscan:>8.4f}")
-print(f"{'K-Means':<12} {ari_kmeans:>8.4f} {nmi_kmeans:>8.4f}")
-print(f"{'GMM':<12} {ari_gmm:>8.4f} {nmi_gmm:>8.4f}")
-print(f"{'BERTopic':<12} {ari_bt:>8.4f} {nmi_bt:>8.4f}")
-```
-
-**Interpretation guidance for the markdown:**
-- ARI ranges from -1 to 1. Values around 0.05-0.15 are expected because your clusters are FINER-GRAINED than ArXiv categories (41 clusters vs 8 categories). Low ARI doesn't mean bad clusters — it means you discovered sub-structure within categories. Say this explicitly.
-- NMI ranges from 0 to 1. Values around 0.2-0.4 would suggest meaningful alignment. If NMI is very low (<0.1), investigate why.
-- Higher NMI for your chosen method vs alternatives = additional evidence for your choice.
-
-Also create a **confusion-style heatmap**: for each cluster, show the distribution of ArXiv categories. This visualizes how your unsupervised clusters relate to human-assigned categories.
-
-```python
-import seaborn as sns
-
-ct = pd.crosstab(
-    df.loc[mask, "cluster_name"],
-    df.loc[mask, "primary_category"],
-    normalize="index"  # row-normalize so each cluster sums to 1
-)
-
-fig, ax = plt.subplots(figsize=(12, 16))
-sns.heatmap(ct, cmap="Blues", ax=ax, annot=True, fmt=".2f")
-ax.set_title("Cluster Composition by ArXiv Category")
-plt.tight_layout()
-plt.show()
-```
-
-This shows, for example, that your "Robot Learning" cluster is 70% cs.RO + 20% cs.AI, which validates it. If a cluster is evenly spread across all 8 categories, it's suspicious — flag it.
-
-### Step 4.2 — Cross-embedding agreement (ARI/NMI between embeddings)
-
-**File:** `notebooks/06_validation.ipynb`
-
-**What to do:**
-
-This is the missing piece in your embedding comparison. Instead of just comparing silhouette scores, check whether different embeddings discover the SAME structure.
-
-Compute ARI and NMI between:
-- KaLM-HDBSCAN vs MiniLM-HDBSCAN (both non-noise only, on their intersection)
-- KaLM-HDBSCAN vs TF-IDF-HDBSCAN
-- MiniLM-HDBSCAN vs TF-IDF-HDBSCAN
-- KaLM-KMeans vs MiniLM-KMeans
-- KaLM-KMeans vs TF-IDF-KMeans
-- MiniLM-KMeans vs TF-IDF-KMeans
-
-For HDBSCAN comparisons, only include papers that are non-noise in BOTH clusterings:
-
-```python
-# Example for HDBSCAN
-both_non_noise = (hdbscan_kalm != -1) & (hdbscan_minilm != -1)
-ari = adjusted_rand_score(hdbscan_kalm[both_non_noise], hdbscan_minilm[both_non_noise])
-nmi = normalized_mutual_info_score(hdbscan_kalm[both_non_noise], hdbscan_minilm[both_non_noise])
-```
-
-Present as two matrices (one for ARI, one for NMI), one per algorithm:
-
-```
-HDBSCAN ARI:
-           KaLM    MiniLM   TF-IDF
-KaLM       1.000   ?.???    ?.???
-MiniLM     ?.???   1.000    ?.???
-TF-IDF     ?.???   ?.???    1.000
-
-K-Means ARI:
-           KaLM    MiniLM   TF-IDF
-KaLM       1.000   ?.???    ?.???
-MiniLM     ?.???   1.000    ?.???
-TF-IDF     ?.???   ?.???    1.000
-```
-
-**What to expect and how to interpret:**
-- High ARI (>0.3) between KaLM and MiniLM = neural embeddings agree, cluster structure is real and not an artifact of one model.
-- Lower ARI with TF-IDF = expected, because TF-IDF captures lexical patterns while neural models capture semantics.
-- If KaLM and MiniLM disagree strongly (ARI < 0.1), that's a red flag — cluster assignments depend heavily on embedding choice, and conclusions are less robust. Report this honestly.
-
-**Expected outcome:** You can now say "my clusters are validated against external labels and robust across embedding methods" (or honestly report where they're not).
-
----
-
-## Phase 5 — Stress-Test Business Recommendations
-
-### Step 5.1 — Replace naive growth calculation with regression
-
-**File:** `notebooks/07_trends_and_insights.ipynb` (will be created by splitting current notebook 05)
-
-**What to do:**
-
-The current growth calculation compares first-6-months average to last-6-months average. This is sensitive to the exact split point and doesn't give confidence intervals. Replace it with linear regression per cluster.
-
-```python
-from scipy import stats
-
-growth_stats = []
-months = sorted(monthly_clusters.index)
-x = np.arange(len(months))  # 0, 1, 2, ... (month index)
-
-for cluster_name in monthly_clusters.columns:
-    y = monthly_clusters[cluster_name].values
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-
-    # Growth rate: slope relative to mean
-    mean_val = y.mean()
-    monthly_growth_pct = (slope / mean_val) * 100 if mean_val > 0 else 0
-
-    growth_stats.append({
-        "Cluster": cluster_name,
-        "Slope (papers/month)": round(slope, 2),
-        "Monthly Growth %": round(monthly_growth_pct, 2),
-        "R-squared": round(r_value**2, 4),
-        "p-value": round(p_value, 6),
-        "Significant (p<0.05)": p_value < 0.05,
-    })
-
-growth_df = pd.DataFrame(growth_stats).sort_values("Slope (papers/month)", ascending=False)
-print(growth_df.to_string(index=False))
-```
-
-This gives you:
-- A slope with a p-value (is the growth statistically significant?)
-- R-squared (is the trend linear, or is it noisy?)
-- Monthly growth percentage that doesn't depend on an arbitrary split
-
-**Important:** Keep the old first-half vs last-half calculation too, for comparison. Show both in the notebook and discuss which is more reliable.
-
-### Step 5.2 — Sensitivity analysis with different time windows
-
-**File:** `notebooks/07_trends_and_insights.ipynb`
-
-**What to do:**
-
-Run the old first-half vs last-half comparison with THREE different splits:
-
-```python
-splits = {
-    "6-month": (months[:6], months[-6:]),
-    "8-month": (months[:8], months[-8:]),
-    "thirds": (months[:len(months)//3], months[-len(months)//3:]),
-}
-
-sensitivity_results = {}
-for split_name, (early, late) in splits.items():
-    early_avg = monthly_clusters.loc[early].mean()
-    late_avg = monthly_clusters.loc[late].mean()
-    growth = ((late_avg - early_avg) / early_avg * 100)
-    sensitivity_results[split_name] = growth
-
-# Show top 10 across all splits
-sensitivity_df = pd.DataFrame(sensitivity_results)
-print(sensitivity_df.sort_values("6-month", ascending=False).head(10))
-```
-
-Present top-10 clusters across all splits side by side. If "LLM Reasoning" shows +415% with one split but +180% with another, REPORT BOTH. The conclusion ("LLM Reasoning is growing fast") is still valid, but the exact number is less meaningful.
-
-Add a markdown cell: "The exact growth percentages vary depending on the time window, but the ranking of fastest-growing areas is consistent across all three splits: [list]. This means the direction is robust even if the magnitude is approximate."
-
-### Step 5.3 — Seasonality check
-
-**File:** `notebooks/07_trends_and_insights.ipynb`
-
-**What to do:**
-
-ArXiv submissions spike around major conference deadlines (NeurIPS ~May, ICML ~Jan, CVPR ~Nov, etc.). Check if your growth trends are confounded by seasonal patterns.
-
-```python
-# Total monthly submissions
-total_monthly = df.groupby("month").size()
-
-# Normalize each cluster by total monthly volume (= share of total)
-normalized = monthly_clusters.div(total_monthly, axis=0) * 100  # as percentage
-
-# Re-compute regression on normalized (share-based) data
-share_growth = []
-for cluster_name in normalized.columns:
-    y = normalized[cluster_name].values
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-    share_growth.append({
-        "Cluster": cluster_name,
-        "Absolute Growth (papers/month)": growth_df[growth_df["Cluster"] == cluster_name]["Slope (papers/month)"].values[0],
-        "Share Growth (%/month)": round(slope, 4),
-        "Share p-value": round(p_value, 6),
-    })
-
-share_df = pd.DataFrame(share_growth).sort_values("Share Growth (%/month)", ascending=False)
-```
-
-If a cluster's growth disappears after normalization (positive absolute slope but near-zero or negative share slope), it was just riding the overall ArXiv growth wave, not actually gaining share. Report which clusters are growing in BOTH absolute terms AND share.
-
-Plot a side-by-side bar chart: absolute growth rank vs share growth rank.
-
-**Expected outcome:** Your business recommendations now have statistical significance, sensitivity analysis, and share-based growth. Much harder to criticize.
-
----
-
-## Phase 6 — Refactor src/ Modules
-
-**Why this is Phase 6:** You need stable analysis code before extracting it into modules. Refactoring code that's still changing is wasted effort.
-
-### Step 6.1 — Fill in src/preprocess.py
+### Step 0.1 — Fill in src/preprocess.py
 
 **File:** `src/preprocess.py`
-
-**What to extract from notebook 03:**
 
 ```python
 """Preprocessing pipeline for ArXiv papers."""
@@ -845,14 +149,12 @@ def preprocess_pipeline(raw_path, output_path):
     return df
 ```
 
-### Step 6.2 — Fill in src/features.py
+### Step 0.2 — Fill in src/features.py
 
 **File:** `src/features.py`
 
-**What to extract from notebooks 03 and 04:**
-
 ```python
-"""Feature extraction: TF-IDF, embeddings, dimensionality reduction."""
+"""Feature extraction: TF-IDF, embeddings, dimensionality reduction, topic coherence."""
 
 import logging
 
@@ -959,11 +261,9 @@ def compute_coherence(df, labels, text_col="abstract", n_terms=10):
     return cm.get_coherence()
 ```
 
-### Step 6.3 — Fill in src/visualize.py
+### Step 0.3 — Fill in src/visualize.py
 
 **File:** `src/visualize.py`
-
-**What to extract:** The repeated plotting patterns from notebooks 02 and 05.
 
 ```python
 """Reusable visualization functions."""
@@ -1052,55 +352,11 @@ def plot_comparison_scatter(comparison_df, x_col, y_col, size_col=None,
     return fig
 ```
 
-### Step 6.4 — Update notebooks to import from src/
-
-**Files:** All notebooks (02 through 07)
-
-**What to do:**
-
-Replace inline code with imports. For example, in notebook 05, replace the inline `get_cluster_top_terms` definition with:
-
-```python
-from src.features import get_cluster_top_terms, compute_coherence
-```
-
-In notebook 03, replace the inline preprocessing with:
-
-```python
-from src.preprocess import filter_papers, clean_abstracts, flag_surveys, lemmatize_abstracts
-```
-
-In notebooks 05 and 07, replace repeated plotting code with:
-
-```python
-from src.visualize import plot_cluster_scatter_2d, plot_growth_bars, plot_monthly_trends
-```
-
-Keep the notebooks as thin orchestration: load data, call functions from `src/`, display results, write markdown commentary.
-
-**Do not over-refactor.** Notebooks should still be readable top-to-bottom. If a piece of code is only used once and is short (< 10 lines), leave it inline. Only extract things that are:
-- Used in multiple notebooks, OR
-- Long enough (> 15 lines) that they clutter the notebook's narrative
-
-**Expected outcome:** `src/` has five real modules (collect, preprocess, features, visualize, label). Notebooks are shorter and focused on narrative + results.
-
----
-
-## Phase 7 — Reproducibility
-
-### Step 7.1 — Pin requirements.txt
+### Step 0.4 — Pin requirements.txt
 
 **File:** `requirements.txt`
 
-**What to do:**
-
-Replace the current bare package names with pinned versions. Run this in your conda/venv:
-
-```bash
-pip freeze > requirements_full.txt
-```
-
-Then manually curate `requirements.txt` to include only the packages you actually use, with pinned versions:
+Replace the current bare package names with pinned versions. Run `pip freeze > requirements_full.txt` in your conda/venv, then manually curate to include only packages you actually use:
 
 ```
 # Pin exact versions for reproducibility
@@ -1127,9 +383,9 @@ spacy==3.X.X
 umap-learn==0.5.X
 ```
 
-**Note:** Remove `sqarify` from requirements — it's unused. Remove `python-dotenv` if not used either. Add `bertopic` and `gensim` (new dependencies from Phase 2).
+**Note:** Remove `sqarify` — it's unused. Add `bertopic` and `gensim` (new dependencies).
 
-### Step 7.2 — Add a Makefile
+### Step 0.5 — Add Makefile
 
 **File:** `Makefile` (NEW)
 
@@ -1165,11 +421,11 @@ clean:
 	@echo "Cleaned processed data. Raw data preserved."
 ```
 
-### Step 7.3 — Write a real README
+### Step 0.6 — Write README skeleton
 
 **File:** `README.md`
 
-**What to include:**
+Write a skeleton README now with the project structure, reproducibility instructions, and method overview. Leave the "Key Findings" section as a placeholder — you'll fill it in after the analysis is complete in the final phase.
 
 ```markdown
 # ArXiv AI Research Trends (2024-2026)
@@ -1179,14 +435,11 @@ to discover and track emerging research trends.
 
 ## What This Project Does
 
-[2-3 sentences: collects papers, embeds them with neural models, clusters with
-4 algorithms, validates clusters, and identifies which research areas are
-growing or declining]
+[TODO: fill after analysis is complete]
 
 ## Key Findings
 
-[5-7 bullet points of the most interesting results — growth areas, declining
-areas, the contrarian opportunity, what the noise tells us]
+[TODO: fill after analysis is complete]
 
 ## Method
 
@@ -1233,49 +486,532 @@ Note: Full pipeline takes ~4-5 hours:
 - Clustering + labeling: ~30min
 ```
 
-**Expected outcome:** Someone can clone the repo and understand what it is, what it found, and how to reproduce it.
+**Expected outcome:** `src/` has five working modules (collect, preprocess, features, visualize, label). Requirements are pinned. Makefile and README exist. All infrastructure is in place before any notebook changes.
 
 ---
 
-## Phase 8 — Split Notebook 05 and Rewrite All Markdown
+## Phase 1 — Preprocessing Improvement (Title + Abstract Embeddings)
+
+**Why:** Titles are often more discriminative than abstracts alone — a title like "DPO-Augmented RLHF for Code Generation" carries dense topic signal that might be diluted in a 200-word abstract. This is a small change that could meaningfully improve every downstream result.
+
+### Step 1.1 — Update notebook 03 to use src/ imports + add new features
+
+**File:** `notebooks/03_preprocessing.ipynb`
+
+**What to do:**
+
+Replace the inline preprocessing code with `src.preprocess` imports. The notebook becomes thin orchestration:
+
+```python
+import sys
+from pathlib import Path
+
+project_root = Path.cwd().parent
+sys.path.insert(0, str(project_root))
+
+import pandas as pd
+from src.preprocess import filter_papers, clean_abstracts, flag_surveys, lemmatize_abstracts
+from src.features import compute_tfidf, compute_embeddings
+
+# Load raw data
+df = pd.read_csv(project_root / "data" / "raw" / "arxiv_papers.csv")
+print(f"Loaded: {len(df):,} papers")
+
+# Preprocessing pipeline
+df = filter_papers(df)
+df = clean_abstracts(df)      # creates abstract_clean AND embed_text
+df = flag_surveys(df)          # creates is_survey
+df = lemmatize_abstracts(df)   # creates abstract_lemma
+
+# Save cleaned data
+processed_dir = project_root / "data" / "processed"
+processed_dir.mkdir(parents=True, exist_ok=True)
+df.to_csv(processed_dir / "arxiv_clean.csv", index=False)
+```
+
+For embeddings, use `src.features.compute_embeddings` but note: MiniLM and KaLM now use `embed_text` (title+abstract) while TF-IDF still uses `abstract_lemma`:
+
+```python
+# TF-IDF (uses lemmatized abstract only — titles add noise to bag-of-words)
+tfidf_matrix, tfidf_model = compute_tfidf(df["abstract_lemma"])
+
+# MiniLM (uses title + abstract for richer signal)
+minilm_embeddings = compute_embeddings(
+    df["embed_text"].tolist(),
+    model_name="all-MiniLM-L6-v2",
+    batch_size=256,
+)
+
+# KaLM (uses title + abstract for richer signal)
+kalm_embeddings = compute_embeddings(
+    df["embed_text"].tolist(),
+    model_name="HIT-TMG/KaLM-embedding-multilingual-mini-instruct-v1.5",
+    batch_size=64,
+)
+```
+
+Save all outputs as before (`tfidf_vectors.npz`, `minilm_embeddings.npy`, `kalm_embeddings.npy`).
+
+**Note:** KaLM embedding takes ~2 hours on GPU. MiniLM takes ~5 minutes. Plan accordingly.
+
+**Expected outcome:** `arxiv_clean.csv` now has `embed_text` and `is_survey` columns. Embeddings are re-generated with richer input.
+
+---
+
+## Phase 2 — UMAP Hyperparameter & Dimension Experiment
+
+**Why:** UMAP settings are the most upstream change after embeddings. If different parameters give better clusters, it changes ALL downstream analysis.
+
+### Step 2.1 — Update notebook 04 to use src/ imports + add experiments
+
+**File:** `notebooks/04_dimensionality_reduction.ipynb`
+
+**What to do:**
+
+Replace inline UMAP code with `src.features.reduce_umap` and `src.features.reduce_svd` imports. Then add the new experiments.
+
+**Existing 20d runs** (now using `reduce_umap`):
+
+```python
+from src.features import reduce_svd, reduce_umap
+
+# TF-IDF: SVD 500d first, then UMAP
+tfidf_svd, svd_model = reduce_svd(tfidf_matrix, n_components=500)
+
+# UMAP 20d for clustering
+tfidf_umap20 = reduce_umap(tfidf_svd, n_components=20)
+minilm_umap20 = reduce_umap(minilm_emb, n_components=20)
+kalm_umap20 = reduce_umap(kalm_emb, n_components=20)
+```
+
+**New: 30d and 40d UMAP:**
+
+```python
+# UMAP 30d
+tfidf_umap30 = reduce_umap(tfidf_svd, n_components=30)
+minilm_umap30 = reduce_umap(minilm_emb, n_components=30)
+kalm_umap30 = reduce_umap(kalm_emb, n_components=30)
+
+# UMAP 40d
+tfidf_umap40 = reduce_umap(tfidf_svd, n_components=40)
+minilm_umap40 = reduce_umap(minilm_emb, n_components=40)
+kalm_umap40 = reduce_umap(kalm_emb, n_components=40)
+```
+
+Save all to `data/processed/` (`tfidf_umap30.npy`, `kalm_umap30.npy`, etc.).
+
+Keep the 2d and 3d UMAP outputs for visualization — regenerate them since embeddings changed in Phase 1.
+
+### Step 2.2 — UMAP n_neighbors sweep
+
+**File:** `notebooks/04_dimensionality_reduction.ipynb`
+
+**What to do:**
+
+You currently fixed `n_neighbors=15` everywhere. With 181k papers, this is quite local. Higher values capture more global structure.
+
+Run a sweep on KaLM embeddings only (to save time):
+
+```python
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+results = []
+for n_neighbors in [15, 30, 50]:
+    for min_dist in [0.0, 0.05]:
+        reduced = reduce_umap(
+            kalm_emb, n_components=20,
+            n_neighbors=n_neighbors, min_dist=min_dist,
+        )
+        km = KMeans(n_clusters=24, random_state=42, n_init=10)
+        labels = km.fit_predict(reduced)
+        sil = silhouette_score(reduced, labels, sample_size=10000)
+        results.append({
+            "n_neighbors": n_neighbors,
+            "min_dist": min_dist,
+            "silhouette": sil,
+        })
+        print(f"n_neighbors={n_neighbors}, min_dist={min_dist}: sil={sil:.4f}")
+```
+
+Pick the best combo. If `n_neighbors=30` or `50` wins, regenerate ALL UMAP outputs with the winning parameters.
+
+**Note:** Each UMAP run on 181k x 896d takes ~15-30 minutes. Full sweep is ~2-3 hours. If time is tight, just test `n_neighbors` in [15, 30] with `min_dist=0.0` (2 runs).
+
+### Step 2.3 — Compare clustering quality across dimensions
+
+**File:** `notebooks/04_dimensionality_reduction.ipynb` (add at the end)
+
+**What to do:**
+
+Run HDBSCAN (`min_cluster_size=1000`, `min_samples=10`) on KaLM embeddings at all three dimensionalities (20d, 30d, 40d), using the best `n_neighbors`/`min_dist` from Step 2.2. For each, compute:
+- Number of clusters
+- Noise percentage
+- Silhouette score (on non-noise points, `sample_size=10000`)
+- Davies-Bouldin index (on non-noise points)
+
+Also run K-Means (k=24) on each dimensionality and compare. This gives you a 2x3 grid.
+
+```
+Dims  Algorithm  Clusters  Noise%  Silhouette  Davies-Bouldin
+20    HDBSCAN    41        36.9%   0.5073      0.7358
+30    HDBSCAN    ??        ??      ??          ??
+40    HDBSCAN    ??        ??      ??          ??
+20    K-Means    24        0%      0.3936      0.9448
+30    K-Means    24        0%      ??          ??
+40    K-Means    24        0%      ??          ??
+```
+
+**Decision:** Pick the dimensionality that gives the best silhouette/DB tradeoff. Add a markdown cell documenting your decision and reasoning.
+
+**Expected outcome:** You know the optimal UMAP dimensionality AND n_neighbors/min_dist, with data to justify both.
+
+---
+
+## Phase 3 — Final Clustering (Full 12-Combination Comparison)
+
+**Why 12 instead of 9:** Adding BERTopic as a fourth algorithm. BERTopic is the state-of-the-art for neural topic modeling — it wraps HDBSCAN + c-TF-IDF and provides automatic topic labels, hierarchy visualization, and topic evolution tracking for free.
+
+### Step 3.1 — Archive old notebook 05 and create new one
+
+**What to do:**
+
+1. Create `notebooks/archive/` directory
+2. Move `05_clustering_and_results.ipynb` into `notebooks/archive/`
+3. Create fresh `05_clustering.ipynb`
+
+Copy the K-Means, GMM, and HDBSCAN cells from the old notebook into the new one. Replace inline `get_cluster_top_terms` with `from src.features import get_cluster_top_terms, compute_coherence`. Replace inline scatter plots with `from src.visualize import plot_cluster_scatter_2d`.
+
+### Step 3.2 — Add BERTopic
+
+**File:** `notebooks/05_clustering.ipynb`
+
+**What to do:**
+
+After the HDBSCAN section, add BERTopic:
+
+```python
+from bertopic import BERTopic
+from umap import UMAP
+from hdbscan import HDBSCAN
+
+for name in ["TF-IDF", "MiniLM", "KaLM"]:
+    if name == "TF-IDF":
+        emb = tfidf_svd
+    elif name == "MiniLM":
+        emb = minilm_emb
+    else:
+        emb = kalm_emb
+
+    umap_model = UMAP(
+        n_components=WINNING_DIM,      # from Phase 2
+        n_neighbors=WINNING_NEIGHBORS, # from Phase 2
+        min_dist=0.0,
+        random_state=42,
+    )
+    hdbscan_model = HDBSCAN(
+        min_cluster_size=1000,
+        min_samples=10,
+        metric="euclidean",
+    )
+
+    topic_model = BERTopic(
+        umap_model=umap_model,
+        hdbscan_model=hdbscan_model,
+        calculate_probabilities=False,
+        verbose=True,
+    )
+    topics, probs = topic_model.fit_transform(
+        df["abstract_clean"].tolist(),
+        embeddings=emb,
+    )
+
+    n_topics = len(set(topics)) - (1 if -1 in topics else 0)
+    noise_pct = (np.array(topics) == -1).mean() * 100
+    print(f"BERTopic + {name}: {n_topics} topics, {noise_pct:.1f}% noise")
+    print(topic_model.get_topic_info().head(15))
+```
+
+**Key BERTopic features to show:**
+- `topic_model.get_topic_info()` — automatic topic labels with representative words
+- `topic_model.visualize_topics()` — interactive topic similarity map
+- `topic_model.visualize_hierarchy()` — hierarchical topic structure (dendrogram)
+- `topic_model.topics_over_time(df["abstract_clean"].tolist(), df["published"].tolist())` — topic evolution chart
+
+### Step 3.3 — Full comparison table (12 combinations)
+
+**File:** `notebooks/05_clustering.ipynb`
+
+**What to do:**
+
+Update the evaluation comparison to include BERTopic. 3 embeddings x 4 algorithms = 12 combinations. Compute silhouette, Davies-Bouldin, Calinski-Harabasz, AND **topic coherence (c_v)** for all 12:
+
+```python
+from src.features import compute_coherence
+
+coherence = compute_coherence(df, labels, text_col="abstract")
+```
+
+The final table:
+
+```
+Embedding  Algorithm  k   Silhouette  Davies-Bouldin  Calinski-Harabasz  Coherence  Noise%
+TF-IDF     K-Means    25  0.3299      0.9536          33534              ?.????     0.0
+TF-IDF     GMM        22  0.3059      1.0927          29914              ?.????     0.0
+TF-IDF     HDBSCAN    39  0.5139      0.6605          33993              ?.????     45.1
+TF-IDF     BERTopic   ??  ?.????      ?.????          ?.????             ?.????     ?.?
+MiniLM     K-Means    29  ...
+...
+KaLM       BERTopic   ??  ...
+```
+
+### Step 3.4 — Select best combination and re-label
+
+**File:** `notebooks/05_clustering.ipynb`, `src/label.py`
+
+Based on the 12-combination table, select the best primary and secondary clustering. If BERTopic wins, compare its auto-labels vs Claude Opus labels as a sanity check. If HDBSCAN wins, re-run Claude Opus labeling (clusters likely changed since embeddings changed).
+
+### Step 3.5 — Hierarchical topic structure
+
+**File:** `notebooks/05_clustering.ipynb`
+
+Build a dendrogram showing how topics relate:
+
+```python
+from scipy.cluster.hierarchy import linkage, dendrogram
+
+centroids = []
+cluster_names = []
+for label in sorted(set(final_labels)):
+    if label == -1:
+        continue
+    mask = final_labels == label
+    centroids.append(kalm_umap_final[mask].mean(axis=0))
+    cluster_names.append(label_info[label]["label"])
+
+centroids = np.array(centroids)
+Z = linkage(centroids, method="ward")
+
+fig, ax = plt.subplots(figsize=(16, 10))
+dendrogram(Z, labels=cluster_names, leaf_rotation=90, leaf_font_size=8, ax=ax)
+ax.set_title("Hierarchical Structure of AI Research Topics")
+ax.set_ylabel("Ward Distance")
+plt.tight_layout()
+plt.show()
+```
+
+If BERTopic was used, you get this for free with `topic_model.visualize_hierarchy()`.
+
+**Expected outcome:** Complete, well-justified clustering with 4 algorithms compared, topic coherence measured, and hierarchical topic structure visualized.
+
+---
+
+## Phase 4 — Noise Investigation & External Validation
+
+**Why:** 37% of papers are labeled as noise. This phase turns the assertion "it's a feature" into a demonstrated finding, and validates clusters against external labels.
+
+### Step 4.1 — Create notebook 06_validation.ipynb
+
+**File:** `notebooks/06_validation.ipynb` (NEW)
+
+Create a new notebook. Load the cleaned dataset, all cluster labels (HDBSCAN, K-Means, GMM, BERTopic for all embeddings), and label JSONs. Use `src/` imports throughout.
+
+### Step 4.2 — Noise composition analysis
+
+**File:** `notebooks/06_validation.ipynb`
+
+Take all noise papers (`hdbscan_label == -1`). Analyze:
+
+1. **Category distribution of noise vs non-noise:**
+   ```python
+   noise_cats = df[df["cluster"] == -1]["primary_category"].value_counts(normalize=True)
+   clean_cats = df[df["cluster"] != -1]["primary_category"].value_counts(normalize=True)
+   ```
+   Plot side by side. Is cs.AI (broad, interdisciplinary) over-represented in noise?
+
+2. **Noise rate over time:**
+   ```python
+   monthly_noise_rate = df.groupby("month").apply(lambda x: (x["cluster"] == -1).mean())
+   ```
+   Is noise growing (new topics emerging) or stable?
+
+3. **Top TF-IDF terms in noise papers** — are they generic or do they hint at hidden topics?
+
+4. **Key term noise rates:**
+   ```python
+   key_terms = {
+       "LLM": r"\bLLM[s]?\b",
+       "diffusion": r"\bdiffusion\b",
+       "transformer": r"\btransformer[s]?\b",
+       "agent": r"\bagent[s]?\b",
+       "multimodal": r"\bmultimodal\b",
+       "RAG": r"\bRAG\b",
+       "fine-tun": r"\bfine.tun",
+       "reasoning": r"\breasoning\b",
+       "reinforcement learning": r"\breinforcement learning\b",
+       "robot": r"\brobot[s]?\b",
+   }
+   for term, pattern in key_terms.items():
+       hits = df[df["abstract"].str.contains(pattern, case=False, na=False)]
+       noise_rate = (hits["cluster"] == -1).mean()
+       print(f"{term}: {noise_rate:.1%} noise rate ({len(hits):,} papers)")
+   ```
+
+5. **Survey papers in noise:**
+   ```python
+   survey_noise = df[df["is_survey"]]["cluster"].eq(-1).mean()
+   non_survey_noise = df[~df["is_survey"]]["cluster"].eq(-1).mean()
+   ```
+   If surveys have much higher noise rate, that explains part of the 37%.
+
+### Step 4.3 — Sub-clustering the noise
+
+**File:** `notebooks/06_validation.ipynb`
+
+```python
+noise_mask = hdbscan_labels == -1
+noise_embeddings = kalm_umap_final[noise_mask]
+
+for ms in [200, 300, 500]:
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=ms, min_samples=10)
+    sub_labels = clusterer.fit_predict(noise_embeddings)
+    n_sub = len(set(sub_labels)) - (1 if -1 in sub_labels else 0)
+    still_noise = (sub_labels == -1).mean() * 100
+    print(f"min_size={ms}: {n_sub} sub-clusters, {still_noise:.1f}% still noise")
+```
+
+If sub-clusters emerge, extract top terms with `get_cluster_top_terms` from `src/features`. Write conclusion: "X% of noise papers form coherent sub-topics below my size threshold. The remaining Y% are genuinely interdisciplinary."
+
+### Step 4.4 — ARI/NMI vs ArXiv categories
+
+**File:** `notebooks/06_validation.ipynb`
+
+```python
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
+
+# For each algorithm (HDBSCAN non-noise, K-Means all, GMM all, BERTopic non-noise):
+mask = hdbscan_labels != -1
+ari = adjusted_rand_score(df.loc[mask, "primary_category"], hdbscan_labels[mask])
+nmi = normalized_mutual_info_score(df.loc[mask, "primary_category"], hdbscan_labels[mask])
+```
+
+Print comparison table for all 4 algorithms. Create confusion-style heatmap with `plot_cluster_category_heatmap` from `src/visualize`.
+
+**Interpretation:** ARI ~0.05-0.15 expected (your clusters are finer-grained than 8 ArXiv categories). NMI ~0.2-0.4 suggests meaningful alignment.
+
+### Step 4.5 — Cross-embedding agreement
+
+**File:** `notebooks/06_validation.ipynb`
+
+Compute ARI/NMI between clusterings from different embeddings:
+
+```python
+# HDBSCAN: only papers non-noise in BOTH
+both_non_noise = (hdbscan_kalm != -1) & (hdbscan_minilm != -1)
+ari = adjusted_rand_score(hdbscan_kalm[both_non_noise], hdbscan_minilm[both_non_noise])
+```
+
+Present as matrices (HDBSCAN ARI, HDBSCAN NMI, K-Means ARI, K-Means NMI).
+
+**Interpretation:** High ARI (>0.3) between KaLM and MiniLM = cluster structure is real. Low ARI with TF-IDF = expected (lexical vs semantic).
+
+**Expected outcome:** Evidence-based statements about noise rate and cluster validity.
+
+---
+
+## Phase 5 — Stress-Test Business Recommendations
+
+### Step 5.1 — Create notebook 07_trends_and_insights.ipynb
+
+**File:** `notebooks/07_trends_and_insights.ipynb` (NEW)
+
+Copy trend analysis and recommendation cells from the archived `05_clustering_and_results.ipynb`. Use `src/` imports for plotting (`plot_growth_bars`, `plot_monthly_trends`, `plot_comparison_scatter`).
+
+### Step 5.2 — Replace naive growth with regression
+
+**File:** `notebooks/07_trends_and_insights.ipynb`
+
+```python
+from scipy import stats
+
+growth_stats = []
+months = sorted(monthly_clusters.index)
+x = np.arange(len(months))
+
+for cluster_name in monthly_clusters.columns:
+    y = monthly_clusters[cluster_name].values
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    mean_val = y.mean()
+    monthly_growth_pct = (slope / mean_val) * 100 if mean_val > 0 else 0
+
+    growth_stats.append({
+        "Cluster": cluster_name,
+        "Slope (papers/month)": round(slope, 2),
+        "Monthly Growth %": round(monthly_growth_pct, 2),
+        "R-squared": round(r_value**2, 4),
+        "p-value": round(p_value, 6),
+        "Significant (p<0.05)": p_value < 0.05,
+    })
+
+growth_df = pd.DataFrame(growth_stats).sort_values("Slope (papers/month)", ascending=False)
+```
+
+Keep the old first-half vs last-half calculation too, for comparison.
+
+### Step 5.3 — Sensitivity analysis
+
+**File:** `notebooks/07_trends_and_insights.ipynb`
+
+Three different time window splits:
+
+```python
+splits = {
+    "6-month": (months[:6], months[-6:]),
+    "8-month": (months[:8], months[-8:]),
+    "thirds": (months[:len(months)//3], months[-len(months)//3:]),
+}
+```
+
+Show top-10 across all splits side by side. Add markdown: "The ranking is consistent across all splits, meaning the direction is robust even if the magnitude varies."
+
+### Step 5.4 — Seasonality check
+
+**File:** `notebooks/07_trends_and_insights.ipynb`
+
+Normalize by total monthly volume to get share-based growth:
+
+```python
+total_monthly = df.groupby("month").size()
+normalized = monthly_clusters.div(total_monthly, axis=0) * 100
+
+# Re-compute regression on normalized data
+share_growth = []
+for cluster_name in normalized.columns:
+    y = normalized[cluster_name].values
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    share_growth.append({
+        "Cluster": cluster_name,
+        "Absolute Growth": growth_df[growth_df["Cluster"] == cluster_name]["Slope (papers/month)"].values[0],
+        "Share Growth (%/month)": round(slope, 4),
+        "Share p-value": round(p_value, 6),
+    })
+```
+
+If growth disappears after normalization, the cluster was just riding overall ArXiv growth. Report which clusters grow in both absolute AND share terms.
+
+**Expected outcome:** Recommendations backed by statistical significance, sensitivity analysis, and share-based growth.
+
+---
+
+## Phase 6 — Presentation (Final)
 
 **Why this is last:** The analysis is now final. Rewriting once is better than rewriting twice.
 
-### Step 8.1 — Split notebook 05 into 05, 06, 07
-
-**Current state:** One monolith notebook `05_clustering_and_results.ipynb` containing clustering + evaluation + labeling + trend analysis + recommendations. Plus the new `06_validation.ipynb` from Phase 3-4.
-
-**Target state:**
-
-- **`05_clustering.ipynb`** — Method comparison only:
-  - K-Means (elbow, silhouette, fine-grained search, final fit, 2D/3D viz)
-  - GMM (BIC, silhouette, fine-grained search, final fit, 2D/3D viz)
-  - HDBSCAN (min_cluster_size sweep, final fit, 2D/3D viz)
-  - BERTopic (fit, automatic labels, hierarchy viz)
-  - Full 12-combination evaluation table (with topic coherence)
-  - Best combination selection + Claude labeling
-  - Hierarchical topic dendrogram
-  - Top TF-IDF terms per cluster
-
-- **`06_validation.ipynb`** — Already created in Phase 3-4:
-  - Noise investigation (composition, time trend, sub-clustering)
-  - Survey papers in noise analysis
-  - ARI/NMI vs ArXiv categories + heatmap
-  - Cross-embedding agreement matrix
-
-- **`07_trends_and_insights.ipynb`** — Findings and recommendations:
-  - Growth analysis (linear regression with p-values)
-  - Sensitivity analysis (3 time window splits)
-  - Seasonality check (absolute vs share growth)
-  - Growth bar charts, bubble plot
-  - Strategic recommendations (now evidence-backed with statistical significance)
-  - Final narrative summary
-
-### Step 8.2 — Rewrite ALL markdown cells across ALL notebooks
+### Step 6.1 — Rewrite ALL markdown cells across ALL notebooks
 
 **Files:** All notebooks (01 through 07)
 
-**Style guide for the rewrite:**
+**Style guide:**
 
 1. **Use "I" instead of "we":**
    - Before: "We proceed with KaLM + HDBSCAN as the primary clustering"
@@ -1291,34 +1027,44 @@ Note: Full pipeline takes ~4-5 hours:
 
 4. **Add brief "why I did this" before each section:**
    - Before: "## K-Means"
-   - After: "## K-Means — Starting Simple\n\nI'm starting with K-Means because it's the simplest baseline and everyone understands it. If K-Means already gives clean clusters, there's no need for fancier methods."
+   - After: "## K-Means — Starting Simple\n\nI'm starting with K-Means because it's the simplest baseline. If K-Means already gives clean clusters, there's no need for fancier methods."
 
 5. **Comment on unexpected results:**
-   - "I didn't expect KaLM to only marginally beat MiniLM here — KaLM is a much larger model (896d vs 384d) and took 2 hours to embed vs 5 minutes. The small gap suggests that for broad topic clustering, you don't necessarily need the biggest model."
+   - "I didn't expect KaLM to only marginally beat MiniLM — KaLM is a much larger model (896d vs 384d) and took 2 hours to embed vs 5 minutes."
 
-6. **Keep it concise.** Personal doesn't mean verbose. Short, opinionated sentences are better than long hedged paragraphs.
+6. **Keep it concise.** Personal doesn't mean verbose. Short, opinionated sentences.
 
-7. **Don't over-explain obvious things.** Skip generic textbook definitions ("K-Means is an algorithm that..."). Your reader knows what K-Means is.
+7. **Don't over-explain obvious things.** Skip textbook definitions.
 
-8. **End each notebook with a 3-5 line "What I learned" section** instead of a dry summary table. Example:
+8. **End each notebook with a 3-5 line "What I learned" section:**
    > ## What I Learned
-   >
-   > The biggest surprise was how badly GMM performed — I expected the soft assignments to help with overlapping topics, but the Gaussian assumption was just wrong for this data. The other surprise was that title+abstract embeddings noticeably improved cluster separation over abstract-only, which makes intuitive sense but I hadn't seen quantified before.
+   > The biggest surprise was how badly GMM performed — I expected soft assignments to help with overlapping topics, but the Gaussian assumption was just wrong for this data.
 
-9. **For each major decision, briefly state what alternatives you considered and why you rejected them.** This shows critical thinking:
-   > I considered using Spectral Clustering but ruled it out — with 181k papers, the affinity matrix would be 181k x 181k, which doesn't fit in memory. HDBSCAN and BERTopic handle large datasets natively.
+9. **State alternatives you considered and why you rejected them:**
+   > I considered Spectral Clustering but ruled it out — with 181k papers, the affinity matrix would be 181k x 181k, which doesn't fit in memory.
 
-**Go through each notebook one by one.** For each markdown cell, ask: "Would I actually say this to a person?" If not, rewrite it.
-
-### Step 8.3 — Clean up duplicated/empty cells
+### Step 6.2 — Clean up duplicated/empty cells
 
 **Files:** All notebooks
 
-- Remove the duplicated "Step 5 — Select Best Combinations" markdown cell in notebook 05
+- Remove the duplicated "Step 5 — Select Best Combinations" markdown cell in the archived notebook 05 (if any cells were copied to new 05)
 - Remove empty cells at the end of notebooks
-- Remove the duplicated "## Summary" heading at the end of notebook 05
-- Check for any `import importlib; importlib.reload(...)` cells left from development — remove them or add a comment explaining they're for development only
-- Remove the `sqarify` import if it exists anywhere (unused dependency)
+- Remove any `import importlib; importlib.reload(...)` cells left from development
+- Remove `sqarify` imports if they exist anywhere
+
+### Step 6.3 — Finalize README
+
+**File:** `README.md`
+
+Fill in the "What This Project Does" and "Key Findings" sections that were left as TODOs in Phase 0. Now you have actual results to report.
+
+### Step 6.4 — Final rerun of ALL notebooks
+
+**What to do:**
+
+Rerun all notebooks 01-07 in order. This ensures all cell outputs match the final rewritten markdown. You don't want stale outputs from earlier runs sitting next to new commentary.
+
+This is the last step. After this, the project is complete.
 
 ---
 
@@ -1327,49 +1073,46 @@ Note: Full pipeline takes ~4-5 hours:
 Use this to track progress:
 
 ```
-Phase 0 — Preprocessing Improvement
-  [ ] 0.1  Add title+abstract embedding input (embed_text column)
-  [ ] 0.2  Re-embed MiniLM and KaLM with title+abstract
-  [ ] 0.3  Flag survey papers (is_survey column)
+Phase 0 — Build src/ Modules + Reproducibility
+  [ ] 0.1  Fill in src/preprocess.py
+  [ ] 0.2  Fill in src/features.py (including compute_coherence)
+  [ ] 0.3  Fill in src/visualize.py
+  [ ] 0.4  Pin requirements.txt (add bertopic, gensim; remove sqarify)
+  [ ] 0.5  Add Makefile
+  [ ] 0.6  Write README skeleton (TODOs for findings)
 
-Phase 1 — UMAP Hyperparameter & Dimension Experiment
-  [ ] 1.1  Add 30d and 40d UMAP to notebook 04
-  [ ] 1.2  Sweep n_neighbors (15, 30, 50) and min_dist (0.0, 0.05)
-  [ ] 1.3  Compare clustering quality across dimensions, pick winner
+Phase 1 — Preprocessing Improvement
+  [ ] 1.1  Update notebook 03 with src/ imports + embed_text + is_survey → rerun
 
-Phase 2 — Final Clustering (12-Combination Comparison)
-  [ ] 2.1  Add BERTopic as fourth algorithm
-  [ ] 2.2  Full 12-combination comparison table (with topic coherence c_v)
-  [ ] 2.3  Select best combination, re-label with Claude Opus
-  [ ] 2.4  Build hierarchical topic dendrogram
+Phase 2 — UMAP Hyperparameter & Dimension Experiment
+  [ ] 2.1  Update notebook 04 with src/ imports + 30d/40d UMAP
+  [ ] 2.2  Sweep n_neighbors (15, 30, 50) and min_dist (0.0, 0.05)
+  [ ] 2.3  Compare clustering quality across dimensions, pick winner → rerun
+  ⚠ CHECKPOINT: verify new silhouette >= old 0.5073 before continuing
 
-Phase 3 — Noise Investigation
-  [ ] 3.1  Create notebook 06_validation.ipynb
-  [ ] 3.2  Noise composition analysis (categories, time, terms, surveys)
-  [ ] 3.3  Sub-clustering the noise (min_cluster_size 200/300/500)
+Phase 3 — Final Clustering (12-Combination Comparison)
+  [ ] 3.1  Archive old 05, create new 05_clustering.ipynb with src/ imports
+  [ ] 3.2  Add BERTopic as fourth algorithm
+  [ ] 3.3  Full 12-combination comparison table (with topic coherence c_v)
+  [ ] 3.4  Select best combination, re-label with Claude Opus
+  [ ] 3.5  Build hierarchical topic dendrogram → run
 
-Phase 4 — External Validation
-  [ ] 4.1  ARI/NMI vs ArXiv categories + confusion heatmap
-  [ ] 4.2  Cross-embedding agreement matrix (ARI/NMI between embeddings)
+Phase 4 — Noise Investigation & External Validation
+  [ ] 4.1  Create 06_validation.ipynb with src/ imports
+  [ ] 4.2  Noise composition analysis (categories, time, terms, surveys)
+  [ ] 4.3  Sub-clustering the noise (min_cluster_size 200/300/500)
+  [ ] 4.4  ARI/NMI vs ArXiv categories + confusion heatmap
+  [ ] 4.5  Cross-embedding agreement matrix → run
 
 Phase 5 — Stress-Test Recommendations
-  [ ] 5.1  Linear regression growth with p-values and R-squared
-  [ ] 5.2  Sensitivity analysis (3 different time window splits)
-  [ ] 5.3  Seasonality check (absolute vs share-of-total growth)
+  [ ] 5.1  Create 07_trends_and_insights.ipynb with src/ imports
+  [ ] 5.2  Linear regression growth with p-values and R-squared
+  [ ] 5.3  Sensitivity analysis (3 different time window splits)
+  [ ] 5.4  Seasonality check (absolute vs share-of-total growth) → run
 
-Phase 6 — Refactor src/
-  [ ] 6.1  Fill in src/preprocess.py
-  [ ] 6.2  Fill in src/features.py (including compute_coherence)
-  [ ] 6.3  Fill in src/visualize.py
-  [ ] 6.4  Update notebooks to import from src/
-
-Phase 7 — Reproducibility
-  [ ] 7.1  Pin requirements.txt (add bertopic, gensim; remove sqarify)
-  [ ] 7.2  Add Makefile
-  [ ] 7.3  Write real README
-
-Phase 8 — Presentation
-  [ ] 8.1  Split notebook 05 into 05, 06, 07
-  [ ] 8.2  Rewrite all markdown cells (personal voice, show thinking)
-  [ ] 8.3  Clean up duplicated/empty cells
+Phase 6 — Presentation (Final)
+  [ ] 6.1  Rewrite all markdown cells (personal voice, show thinking)
+  [ ] 6.2  Clean up duplicated/empty cells
+  [ ] 6.3  Finalize README (fill in findings)
+  [ ] 6.4  Final rerun of ALL notebooks (01-07)
 ```
