@@ -19,7 +19,60 @@ notebooks/
   05_clustering.ipynb
   06_validation.ipynb
   07_trends_and_insights.ipynb
+  archive/
+    05_clustering_and_results.ipynb   (original monolith, kept for reference)
 ```
+
+---
+
+## How to Handle Existing Notebooks
+
+Before starting any phase, read this section to understand the overall file management strategy.
+
+### Notebooks 01-04: Modify in place, rerun
+
+These are the data pipeline. They don't need splitting, just modifications:
+
+- **01_data_collection.ipynb** — No changes needed. Don't touch it.
+- **02_exploratory_analysis.ipynb** — No code changes. Only markdown rewrite in Phase 8. Rerun at the end to regenerate plots with clean outputs.
+- **03_preprocessing.ipynb** — Add `embed_text` column and `is_survey` flag (Phase 0). Rerun to regenerate `arxiv_clean.csv` and re-embed with title+abstract. The old embedding `.npy` files get overwritten.
+- **04_dimensionality_reduction.ipynb** — Add 30d/40d UMAP + n_neighbors sweep (Phase 1). Rerun. Old 20d/2d/3d files get regenerated too since the input embeddings changed in Phase 0.
+
+### Notebook 05: Archive the old one, create new ones from it
+
+This is the only notebook that needs splitting. It's a monolith doing 5 jobs (clustering, evaluation, labeling, trends, recommendations). Surgically removing sections is messier than starting clean.
+
+1. **Create** `notebooks/archive/` directory
+2. **Move** `05_clustering_and_results.ipynb` into `notebooks/archive/` (keep it for reference — you'll copy cells from it)
+3. **Create fresh** `05_clustering.ipynb` — copy over the clustering + evaluation cells from the old 05, then add BERTopic, topic coherence, and the dendrogram
+4. **Create fresh** `06_validation.ipynb` — entirely new content (noise analysis, ARI/NMI, cross-embedding agreement)
+5. **Create fresh** `07_trends_and_insights.ipynb` — copy the trend/recommendation cells from the old 05, then rework them with regression, sensitivity analysis, seasonality normalization
+
+### Why not start everything from scratch?
+
+Notebooks 01-04 have working code with correct outputs. Rebuilding them from zero wastes time and risks introducing bugs in code that already works. Modify and rerun is safer and faster.
+
+Notebook 05 is different — splitting a monolith by surgical deletion leaves messy artifacts (orphaned variables, broken cell dependencies). Copying the relevant cells into clean new notebooks is cleaner.
+
+### Execution order summary
+
+```
+1. Modify 03 → rerun                    (~2.5 hours, mostly KaLM embedding)
+2. Modify 04 → rerun                    (~2-3 hours, UMAP runs)
+   ⚠ CHECKPOINT: Quick-test HDBSCAN on new KaLM UMAP.
+     Compare silhouette to old 0.5073. If worse, adjust before continuing.
+3. Archive old 05, create new 05 → run  (~1 hour, clustering)
+4. Create new 06 → run                  (~10 minutes, validation)
+5. Create new 07 → run                  (~5 minutes, trends)
+6. Refactor src/ modules                (no rerun needed)
+7. Fix requirements, add Makefile, write README
+8. Rewrite markdown in ALL notebooks    (01-07)
+9. Final rerun of ALL notebooks         (ensures cell outputs match final markdown)
+```
+
+The checkpoint after step 2 is important — before spending hours on steps 3-7, verify that the new embeddings + UMAP settings actually improved results. If silhouette dropped, investigate before building everything on top of bad foundations.
+
+The final rerun in step 9 ensures all cell outputs in the notebooks match the rewritten markdown narrative. You don't want stale outputs from an earlier run sitting next to new commentary.
 
 ---
 
