@@ -14,3 +14,6 @@ dependencies:
   - hdbscan
   - matplotlib-venn
   - langdetect
+  - anthropic
+  - pydantic
+  - python-dotenv

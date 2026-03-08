@@ -14,3 +14,7 @@ ruff
 pre-commit
 matplotlib-venn
 langdetect
+anthropic
+pydantic
+python-dotenv
+sqarify
