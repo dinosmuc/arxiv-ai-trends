@@ -1,20 +1,36 @@
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-plotly
-jupyterlab
-umap-learn
-hdbscan
-arxiv
-sentence-transformers
-spacy
-ruff
-pre-commit
-matplotlib-venn
-langdetect
-anthropic
-pydantic
-python-dotenv
-sqarify
+# Core data science
+numpy==2.3.5
+pandas==3.0.1
+scikit-learn==1.8.0
+scipy==1.17.0
+
+# Visualization
+matplotlib==3.10.8
+seaborn==0.13.2
+plotly==6.5.2
+matplotlib-venn==1.1.2
+
+# Text processing
+spacy==3.8.11
+sentence-transformers==5.2.3
+langdetect==1.0.9
+gensim>=4.3.0  # needed for topic coherence (Phase 3)
+
+# Dimensionality reduction & clustering
+umap-learn==0.5.11
+hdbscan==0.8.41
+
+# Data collection
+arxiv==2.4.0
+
+# LLM labeling
+anthropic==0.84.0
+pydantic==2.12.5
+
+# Environment
+python-dotenv==1.2.2
+jupyterlab==4.5.4
+
+# Code quality
+ruff==0.15.2
+pre-commit==4.5.1
