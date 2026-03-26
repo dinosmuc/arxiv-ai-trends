@@ -3,17 +3,33 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
-  - scikit-learn
-  - plotly
-  - matplotlib
+  # Core data science
   - numpy
-  - seaborn
-  - jupyterlab
   - pandas
+  - scikit-learn
+  - scipy
+  # Visualization
+  - matplotlib
+  - seaborn
+  - plotly
+  # Text processing
+  - spacy
+  - gensim
+  # Dimensionality reduction & clustering
   - umap-learn
   - hdbscan
-  - matplotlib-venn
-  - langdetect
+  # Data collection
+  - arxiv
+  # LLM labeling
   - anthropic
   - pydantic
+  # Environment
   - python-dotenv
+  - jupyterlab
+  # Pip-only packages
+  - pip
+  - pip:
+      - sentence-transformers
+      - wordcloud
+      - ruff
+      - pre-commit
