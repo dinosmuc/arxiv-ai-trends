@@ -1,0 +1,475 @@
+{
+  "0": {
+    "label": "LLM Reliability and Hallucination Mitigation",
+    "description": "Research on detecting, understanding, and mitigating hallucinations, miscalibration, and unreliable outputs in large language models and vision-language models.",
+    "subtopics": [
+      "Hallucination detection and mitigation in LLMs and multimodal models",
+      "Uncertainty quantification and calibration for language models",
+      "Factual consistency evaluation and fact-checking",
+      "Attention mechanisms and internal representations driving hallucinations",
+      "Training and decoding strategies for improving model reliability"
+    ]
+  },
+  "1": {
+    "label": "Face Forgery Detection and Privacy",
+    "description": "Research on detecting manipulated facial imagery (deepfakes) and preserving visual privacy in face-centric computer vision systems.",
+    "subtopics": [
+      "Deepfake detection and generalization across unseen generators",
+      "Privacy-preserving face and activity recognition",
+      "Image and video manipulation localization",
+      "Datasets and benchmarks for forgery and manipulation",
+      "Face generation, morphing, and de-identification techniques"
+    ]
+  },
+  "2": {
+    "label": "Adversarial Robustness in Deep Learning",
+    "description": "Research on adversarial attacks against and defenses for deep neural networks across vision, language, and multimodal models, encompassing attack generation, robustness evaluation, and defense mechanisms.",
+    "subtopics": [
+      "Adversarial attack methods and transferability",
+      "Adversarial training and defense strategies",
+      "Backdoor attacks and detection in multimodal models",
+      "Adversarial robustness of large vision-language models",
+      "Watermarking and copyright protection against adversarial manipulation"
+    ]
+  },
+  "3": {
+    "label": "Causal Inference and Discovery Methods",
+    "description": "Research advancing causal inference, causal discovery, and causal reasoning methods across diverse domains using statistical, machine learning, and large language model approaches.",
+    "subtopics": [
+      "Causal discovery algorithms and graphical models",
+      "Treatment effect estimation and meta-learners",
+      "Causal reasoning with large language models",
+      "Causal inference from time-series and observational data",
+      "Applied causal machine learning in real-world domains"
+    ]
+  },
+  "4": {
+    "label": "Federated Learning Privacy and Efficiency",
+    "description": "Research on federated learning systems addressing communication efficiency, data heterogeneity, privacy preservation, and security against adversarial attacks in distributed machine learning.",
+    "subtopics": [
+      "Communication efficiency and compression in federated learning",
+      "Handling data heterogeneity and non-IID distributions",
+      "Privacy attacks and defenses (membership inference, data reconstruction, backdoors)",
+      "Personalized and model-heterogeneous federated learning",
+      "Federated fine-tuning of large models with parameter-efficient methods"
+    ]
+  },
+  "5": {
+    "label": "Graph Neural Networks Research Advances",
+    "description": "Research on graph neural networks and graph-structured data modeling, spanning architecture design, learning paradigms, and diverse applications such as node classification, link prediction, and integration with large language models.",
+    "subtopics": [
+      "GNN architectures and expressiveness (message passing, metapaths, latent graph inference)",
+      "Integration of LLMs with graph-structured data",
+      "Graph augmentation and domain generalization techniques",
+      "Temporal and dynamic graph modeling",
+      "GNN explainability, privacy, and robustness"
+    ]
+  },
+  "6": {
+    "label": "Time Series Forecasting and Analysis",
+    "description": "Research on advanced deep learning architectures and foundation models for time series forecasting, classification, anomaly detection, and reasoning across diverse application domains.",
+    "subtopics": [
+      "Foundation models and LLMs for time series forecasting and reasoning",
+      "Transformer and Mamba architectures for multivariate time series",
+      "Pre-training, transfer learning, and zero/few-shot strategies for time series",
+      "Time series representation learning, clustering, and classification",
+      "Domain-specific applications (energy, healthcare, supply chain, process monitoring)"
+    ]
+  },
+  "7": {
+    "label": "AI for Molecular and Biological Discovery",
+    "description": "This cluster encompasses research applying machine learning and deep learning methods\u2014including language models, graph neural networks, diffusion models, and contrastive learning\u2014to molecular, protein, and biological structure prediction, generation, and property optimization.",
+    "subtopics": [
+      "Molecular generation and representation learning (SMILES, neural fields, diffusion models)",
+      "Protein structure, function, and interaction prediction",
+      "Drug discovery and repositioning",
+      "Biological sequence modeling with transformers",
+      "Materials and crystal property prediction"
+    ]
+  },
+  "8": {
+    "label": "Remote Sensing and Environmental AI",
+    "description": "AI and deep learning methods applied to remote sensing, environmental monitoring, agriculture, and ecological analysis across diverse imaging modalities.",
+    "subtopics": [
+      "Hyperspectral image processing and classification",
+      "Underwater image enhancement and detection",
+      "Agricultural disease detection and crop monitoring",
+      "Land use/land cover mapping and segmentation",
+      "Multi-modal and spectral data fusion for environmental tasks"
+    ]
+  },
+  "9": {
+    "label": "Optimization Algorithms and Metaheuristics",
+    "description": "Research on advancing optimization methods\u2014including evolutionary algorithms, Bayesian optimization, and LLM-assisted approaches\u2014for solving complex, multi-objective, and large-scale optimization problems.",
+    "subtopics": [
+      "LLM-assisted optimization and algorithm design",
+      "Multi-objective and Pareto optimization",
+      "Bayesian optimization and surrogate modeling",
+      "Evolutionary and swarm intelligence algorithms",
+      "Combinatorial optimization and scheduling"
+    ]
+  },
+  "10": {
+    "label": "Visual-LiDAR Localization and Place Recognition",
+    "description": "Research on robotic localization, place recognition, and SLAM systems leveraging visual, LiDAR, and multi-modal sensor data for autonomous navigation and mapping.",
+    "subtopics": [
+      "Visual place recognition and feature aggregation methods",
+      "LiDAR-based odometry, mapping, and scan matching",
+      "Multi-modal and cross-modal sensor fusion for localization",
+      "SLAM systems (monocular, RGB-D, Gaussian splatting, NeRF-based)",
+      "Datasets and benchmarks for localization and mapping evaluation"
+    ]
+  },
+  "11": {
+    "label": "Emotion Recognition and Sentiment Analysis",
+    "description": "Research on detecting, classifying, and understanding emotions and sentiments across multiple modalities, languages, and application domains using modern AI techniques.",
+    "subtopics": [
+      "Multimodal emotion recognition (visual, speech, physiological, text)",
+      "Multilingual and cross-lingual sentiment and emotion detection",
+      "Large language models for emotion cognition and sentiment analysis",
+      "Emotion datasets, benchmarks, and evaluation frameworks",
+      "Emotion-driven creative and interactive applications"
+    ]
+  },
+  "12": {
+    "label": "Anomaly Detection Methods and Applications",
+    "description": "Research on novel algorithms and frameworks for detecting anomalies across diverse domains including video surveillance, industrial manufacturing, medical imaging, cybersecurity, and tabular data.",
+    "subtopics": [
+      "Video anomaly detection using multi-modal and deep learning approaches",
+      "Industrial visual defect detection and quality inspection",
+      "Unsupervised and few-shot anomaly detection with foundation models",
+      "Graph-based and tree-based anomaly detection algorithms",
+      "Medical and 3D anomaly detection frameworks"
+    ]
+  },
+  "13": {
+    "label": "Physics-Informed ML for Engineering",
+    "description": "Research at the intersection of physics-informed machine learning, neural operators, and deep learning applied to modeling physical systems, solving PDEs, and engineering condition monitoring.",
+    "subtopics": [
+      "Physics-Informed Neural Networks for PDE solving",
+      "Neural operators and surrogate models for dynamical systems",
+      "Fault diagnosis and condition monitoring with deep learning",
+      "Knowledge distillation and lightweight models for edge deployment",
+      "Physics-constrained and geometry-aware learning architectures"
+    ]
+  },
+  "14": {
+    "label": "AI for Weather and Climate",
+    "description": "This cluster encompasses research applying machine learning and deep learning techniques to weather forecasting, climate modeling, natural disaster monitoring, and environmental prediction across diverse spatiotemporal scales.",
+    "subtopics": [
+      "Data-driven weather and climate forecasting",
+      "Disaster detection, mapping, and response",
+      "Explainable and interpretable AI for environmental science",
+      "Deep learning for data assimilation and physical parameterization",
+      "Energy and infrastructure forecasting under climate variability"
+    ]
+  },
+  "15": {
+    "label": "Image Restoration and Enhancement",
+    "description": "This cluster focuses on deep learning methods for restoring and enhancing degraded images, including denoising, super-resolution, dehazing, low-light enhancement, and unified all-in-one restoration frameworks.",
+    "subtopics": [
+      "All-in-one multi-degradation image/video restoration",
+      "Image denoising (self-supervised, zero-shot, and CNN-based)",
+      "Super-resolution and low-light image enhancement",
+      "State space models (Mamba) for vision tasks",
+      "Face restoration and perceptual quality assessment"
+    ]
+  },
+  "16": {
+    "label": "Explainability Methods for AI Models",
+    "description": "Research on techniques, frameworks, and theoretical foundations for explaining and interpreting predictions made by machine learning models across various architectures and domains.",
+    "subtopics": [
+      "Theoretical foundations of explanations (certificates, complexity, formal verification)",
+      "Prototype-based and concept-based interpretable models",
+      "Post-hoc explanation methods (attribution, saliency maps, feature importance)",
+      "Evaluation metrics and frameworks for explanation quality",
+      "Mechanistic interpretability and sparse autoencoders for neural network internals"
+    ]
+  },
+  "17": {
+    "label": "Transformer Architecture Analysis and Optimization",
+    "description": "Research on understanding, compressing, and improving the efficiency and interpretability of transformer and state space model architectures for large language models.",
+    "subtopics": [
+      "KV cache compression and efficient inference (sparse attention, quantization, eviction)",
+      "Mechanistic interpretability and understanding of transformer internals",
+      "Hybrid architectures combining attention and state space models",
+      "Model compression through pruning, distillation, and depth optimization",
+      "Theoretical analysis of transformer capabilities and training objectives"
+    ]
+  },
+  "18": {
+    "label": "Medical AI and Image Segmentation",
+    "description": "Research at the intersection of medical/healthcare AI applications and advanced image segmentation methods, spanning clinical decision support, medical imaging analysis, and vision-language models.",
+    "subtopics": [
+      "Image segmentation methods (few-shot, open-vocabulary, point-prompted)",
+      "Medical imaging and computational pathology",
+      "Vision-language models for healthcare applications",
+      "LLMs and multimodal AI in clinical decision-making",
+      "Physiological signal analysis and brain-computer interfaces"
+    ]
+  },
+  "19": {
+    "label": "Domain Adaptation and Object Detection",
+    "description": "Research on improving object detection and visual recognition through domain adaptation, generalization, and feature enhancement techniques across diverse imaging conditions.",
+    "subtopics": [
+      "Domain adaptation and generalization methods (source-free, zero-shot, unsupervised)",
+      "YOLO-based object detection architectures and improvements",
+      "Small object and remote sensing detection",
+      "Vision-language models (CLIP, SAM) for transfer learning and adaptation",
+      "Multi-scale feature fusion and pyramid network enhancements"
+    ]
+  },
+  "20": {
+    "label": "Video Understanding and Retrieval",
+    "description": "Research on multimodal methods for video understanding, retrieval, temporal grounding, and summarization leveraging language models and cross-modal learning.",
+    "subtopics": [
+      "Text-video retrieval and cross-modal alignment",
+      "Temporal grounding and event localization in videos",
+      "Video summarization and keyframe extraction",
+      "Multimodal large language models for video comprehension",
+      "Audio-visual learning and segmentation"
+    ]
+  },
+  "21": {
+    "label": "Video-Based Human Action Understanding",
+    "description": "Research on recognizing, localizing, and analyzing human actions in videos using deep learning, skeleton data, and multimodal approaches across domains including sports, daily living, and egocentric settings.",
+    "subtopics": [
+      "Skeleton-based action recognition and representation learning",
+      "Temporal action localization and segmentation",
+      "Sports video analytics and tactical analysis",
+      "Multimodal and vision-language models for action understanding",
+      "Activity recognition in daily living and smart environments"
+    ]
+  },
+  "22": {
+    "label": "Human-Centric 3D Vision and Animation",
+    "description": "Research focused on reconstructing, generating, and animating 3D human bodies, faces, and motions from visual or multimodal inputs, encompassing avatars, pose estimation, motion synthesis, and talking face generation.",
+    "subtopics": [
+      "3D avatar reconstruction and editing",
+      "Human motion generation and synthesis",
+      "Talking face generation and facial animation",
+      "Human pose estimation and body perception",
+      "Music/audio-driven body and gesture generation"
+    ]
+  },
+  "23": {
+    "label": "AI Safety and Adversarial Robustness",
+    "description": "Research on evaluating, attacking, and defending AI systems\u2014particularly large language models and vision-language models\u2014against adversarial threats, harmful outputs, and safety alignment failures across diverse modalities and languages.",
+    "subtopics": [
+      "Jailbreak attacks and defenses for LLMs and VLMs",
+      "Multilingual and cross-cultural AI safety evaluation",
+      "Harmful content detection and moderation (hate speech, toxicity, abuse)",
+      "Prompt injection and adversarial manipulation of AI agents",
+      "Safety alignment, guardrails, and compliance in deployed AI systems"
+    ]
+  },
+  "24": {
+    "label": "Multimodal Vision-Language Models and Adaptation",
+    "description": "Research on advancing multimodal vision-language models through improved fusion, adaptation, reasoning, and handling of missing modalities for diverse downstream tasks.",
+    "subtopics": [
+      "Missing modality handling and robust multimodal fusion",
+      "Vision-language model efficiency, distillation, and prompt tuning",
+      "Multimodal retrieval, grounding, and document understanding",
+      "Interpretability and reasoning in vision-language models",
+      "Benchmarks and evaluation for multimodal tasks"
+    ]
+  },
+  "25": {
+    "label": "Uncertainty Quantification and Calibration Methods",
+    "description": "Research on improving uncertainty estimation, prediction calibration, and confidence quantification in deep learning models across classification, self-supervised learning, and conformal prediction frameworks.",
+    "subtopics": [
+      "Conformal prediction training and risk control",
+      "Model calibration and epistemic uncertainty estimation",
+      "Self-supervised and contrastive representation learning",
+      "Learning under label noise and domain shift",
+      "Feature calibration and single-pass uncertainty methods"
+    ]
+  },
+  "26": {
+    "label": "Diffusion Model Advances and Optimization",
+    "description": "Research on improving diffusion-based generative models through acceleration, distillation, architectural innovations, training strategies, and controlled generation techniques.",
+    "subtopics": [
+      "Inference acceleration and step reduction (caching, token pruning, adaptive step skipping)",
+      "One-step and few-step distillation methods (flow matching, divergence-based frameworks)",
+      "Conditional and controlled image generation (spatial control, style transfer, safety constraints)",
+      "Fine-tuning and training improvements (self-play, Bayesian steering, regularization losses)",
+      "Understanding and analysis of diffusion models (bias-variance tradeoff, semantic similarity, incompleteness)"
+    ]
+  },
+  "27": {
+    "label": "Video Generation and Processing",
+    "description": "Research advancing video generation, editing, compression, and control using diffusion models and neural representations, with emphasis on temporal coherence, controllability, and quality assessment.",
+    "subtopics": [
+      "Controllable video generation (motion, camera, layout)",
+      "Video quality and temporal coherence enhancement",
+      "Video editing and customization with diffusion models",
+      "Neural video compression and representation",
+      "Video generation evaluation and benchmarking"
+    ]
+  },
+  "28": {
+    "label": "Neural Network Training and Optimization",
+    "description": "This cluster explores advances in neural network architectures, training algorithms, optimization methods, and their theoretical foundations, spanning deep learning, spiking neural networks, and efficient computation.",
+    "subtopics": [
+      "Optimization algorithms for deep learning (Adam variants, second-order methods, zero-order methods)",
+      "Spiking neural networks for energy-efficient inference and learning",
+      "Generalization, stability, and implicit bias in neural network training",
+      "Novel neural network architectures (KANs, task-based neurons, NAS)",
+      "Training dynamics and loss landscape analysis (neural collapse, sharpness, symmetry)"
+    ]
+  },
+  "29": {
+    "label": "Neural Network Compression and Quantization",
+    "description": "Research on techniques for compressing and quantizing neural networks to improve deployment efficiency while preserving model accuracy.",
+    "subtopics": [
+      "Post-training and quantization-aware training methods for LLMs and vision models",
+      "Network pruning strategies including depth, width, and channel pruning",
+      "Theoretical foundations of quantization and lossless compression",
+      "Efficient deployment on edge and resource-constrained devices",
+      "Quantization of generative models including diffusion and language-style architectures"
+    ]
+  },
+  "30": {
+    "label": "Multilingual NLP and Speech Processing",
+    "description": "Research on developing, evaluating, and improving natural language processing and speech recognition systems across diverse languages, with emphasis on multilingual models, low-resource languages, and cross-lingual transfer.",
+    "subtopics": [
+      "Low-resource and African language NLP tools and benchmarks",
+      "Multilingual and code-switching automatic speech recognition",
+      "Cross-lingual text classification and topic modeling",
+      "Large language models for multilingual and Indic language support",
+      "Machine translation and speech translation systems"
+    ]
+  },
+  "31": {
+    "label": "LLM Evaluation and Educational Applications",
+    "description": "Research on evaluating large language model performance through benchmarks, automated judging, and applying LLMs in educational contexts such as tutoring, grading, and question generation.",
+    "subtopics": [
+      "LLM-as-judge benchmarking and calibration methods",
+      "Automated essay and short-answer grading with LLMs",
+      "LLM-based intelligent tutoring systems and pedagogical frameworks",
+      "Multiple-choice question answering biases and mechanisms in LLMs",
+      "Benchmark design, saturation, and model differentiation metrics"
+    ]
+  },
+  "32": {
+    "label": "Reinforcement Learning Methods and Applications",
+    "description": "This cluster encompasses diverse advances in reinforcement learning theory, algorithms, and applications spanning offline/online settings, safety constraints, multi-agent systems, and real-world robotics deployment.",
+    "subtopics": [
+      "Offline and offline-to-online reinforcement learning",
+      "Safe and robust reinforcement learning with constraints",
+      "Multi-agent reinforcement learning and communication",
+      "Real-world robotics deployment and policy learning",
+      "Foundational RL theory: value estimation, policy iteration, and reward shaping"
+    ]
+  },
+  "33": {
+    "label": "Robot Planning, Control & Manipulation",
+    "description": "This cluster encompasses research on autonomous robot systems spanning motion planning, multi-agent coordination, locomotion control, manipulation, and human-robot interaction across diverse platforms and environments.",
+    "subtopics": [
+      "Multi-agent path finding and trajectory planning",
+      "Legged robot locomotion and humanoid control",
+      "Robot manipulation and contact-rich interaction",
+      "Human-robot interaction and assistive interfaces",
+      "Learning-based policies for embodied control"
+    ]
+  },
+  "34": {
+    "label": "Recommender Systems Methods and Frameworks",
+    "description": "Research on novel architectures, paradigms, and optimization strategies for improving recommendation system accuracy, personalization, fairness, and scalability across diverse settings.",
+    "subtopics": [
+      "Generative and sequential recommendation models",
+      "LLM-enhanced and reasoning-augmented recommendations",
+      "Federated and privacy-preserving recommendation",
+      "Debiasing, fairness, and counterfactual augmentation",
+      "Collaborative filtering and graph-based approaches"
+    ]
+  },
+  "35": {
+    "label": "Retrieval-Augmented Generation and Reranking",
+    "description": "Research on improving information retrieval, reranking, and retrieval-augmented generation systems for enhanced question answering and knowledge-grounded language model outputs.",
+    "subtopics": [
+      "Query rewriting and reformulation strategies",
+      "Reranking methods using LLMs and reinforcement learning",
+      "RAG pipeline architectures and modular design",
+      "Context selection, chunking, and metadata enrichment",
+      "Multi-hop and conversational question answering with retrieval"
+    ]
+  },
+  "36": {
+    "label": "Bias and Fairness in Language Models",
+    "description": "This cluster investigates biases, fairness issues, and framing effects in large language models and NLP systems across social, political, and cultural dimensions.",
+    "subtopics": [
+      "Demographic and social bias detection and benchmarking in LLMs",
+      "Bias mitigation and debiasing techniques for language models",
+      "Media framing, political bias, and narrative analysis using NLP",
+      "Privacy, tone, and format biases in LLM outputs",
+      "Cross-cultural and cross-domain generalization of bias frameworks"
+    ]
+  },
+  "37": {
+    "label": "LLM Alignment and AI Personality",
+    "description": "Research on aligning large language models with human preferences through preference optimization techniques and evaluating AI personality and persona simulation.",
+    "subtopics": [
+      "Preference optimization methods (DPO, RLHF, and variants)",
+      "AI personality evaluation and psychometric assessment",
+      "Persona generation and simulation for LLMs",
+      "Personalized LLM alignment with diverse user preferences",
+      "Reward modeling and preference data synthesis"
+    ]
+  },
+  "38": {
+    "label": "Autonomous Driving and Traffic Intelligence",
+    "description": "Research advancing autonomous and connected vehicle systems through perception, prediction, planning, collaboration, and simulation for safer and more efficient transportation.",
+    "subtopics": [
+      "Collaborative and cooperative vehicle perception and communication (V2X, platooning, multi-agent)",
+      "Trajectory prediction and motion forecasting for vehicles and pedestrians",
+      "Autonomous driving planning and control (path planning, lane change, end-to-end systems)",
+      "Traffic simulation, safety evaluation, and crash prediction",
+      "LLM and vision-language model applications in driving and mobility"
+    ]
+  },
+  "39": {
+    "label": "3D Point Cloud Perception",
+    "description": "Research on processing, understanding, and generating 3D point cloud and related geometric data for tasks spanning autonomous driving, scene understanding, segmentation, and robustness.",
+    "subtopics": [
+      "Autonomous driving perception (LiDAR, radar, semantic scene completion)",
+      "Point cloud classification, segmentation, and registration",
+      "3D Gaussian splatting and radiance field segmentation",
+      "Adversarial robustness and domain adaptation for 3D data",
+      "Point cloud generation, completion, and representation learning"
+    ]
+  },
+  "40": {
+    "label": "3D Scene Reconstruction and Rendering",
+    "description": "Research on neural and Gaussian-based 3D scene representation, reconstruction, and novel view synthesis with emphasis on quality, efficiency, and generation.",
+    "subtopics": [
+      "3D Gaussian Splatting optimization and compression",
+      "Neural implicit surface reconstruction (SDF/NeRF)",
+      "Text/image-to-3D generation and texturing",
+      "Camera pose estimation and multi-view consistency",
+      "Large-scale and indoor scene reconstruction"
+    ]
+  },
+  "41": {
+    "label": "LLM Agents and Decision-Making Systems",
+    "description": "Research on leveraging large language models as autonomous agents for complex reasoning, tool use, multi-agent coordination, and decision-making across scientific, social, and interactive domains.",
+    "subtopics": [
+      "Tool use and agentic workflow optimization",
+      "Multi-agent systems and cooperative decision-making",
+      "LLM agents for scientific discovery and simulation",
+      "Search, planning, and reasoning in interactive environments",
+      "Benchmarking and evaluating LLM agent capabilities"
+    ]
+  },
+  "42": {
+    "label": "LLM Reasoning Optimization Methods",
+    "description": "Research on improving the reasoning capabilities and efficiency of large language models through reinforcement learning, structured prompting, and adaptive inference-time strategies.",
+    "subtopics": [
+      "Reinforcement learning algorithms for LLM reasoning (GRPO, PPO variants, reward design)",
+      "Adaptive and efficient reasoning strategies (token efficiency, over-thinking mitigation, test-time scaling)",
+      "Structured reasoning frameworks (Chain-of-Thought, Tree-of-Thought, recursive reasoning)",
+      "Domain-specific and formal reasoning (theorem proving, legal, logical reasoning)",
+      "Knowledge distillation and curriculum learning for reasoning"
+    ]
+  }
+}

@@ -13,6 +13,9 @@ __pycache__/
 # OS
 .DS_Store
 
+# Linter cache
+.ruff_cache/
+
 # Project context (local only)
 project_context.md
 CLAUDE.md

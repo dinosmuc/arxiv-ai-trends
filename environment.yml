@@ -4,33 +4,33 @@ channels:
 dependencies:
   - python=3.11
   # Core data science
-  - numpy
-  - pandas
-  - scikit-learn
-  - scipy
-  - statsmodels
+  - numpy=2.3.5
+  - pandas=3.0.1
+  - scikit-learn=1.8.0
+  - scipy=1.17.0
+  - statsmodels=0.14.6
   # Visualization
-  - matplotlib
-  - seaborn
-  - plotly
+  - matplotlib=3.10.8
+  - seaborn=0.13.2
+  - plotly=6.5.2
   # Text processing
-  - spacy
-  - gensim
+  - spacy=3.8.11
+  - gensim=4.4.0
   # Dimensionality reduction & clustering
-  - umap-learn
-  - hdbscan
+  - umap-learn=0.5.11
+  - hdbscan=0.8.41
   # Data collection
-  - arxiv
+  - arxiv=2.4.0
   # LLM labeling
-  - anthropic
-  - pydantic
+  - anthropic=0.84.0
+  - pydantic=2.12.5
   # Environment
-  - python-dotenv
-  - jupyterlab
+  - python-dotenv=1.2.2
+  - jupyterlab=4.5.4
   # Pip-only packages
   - pip
   - pip:
-      - sentence-transformers
-      - wordcloud
-      - ruff
-      - pre-commit
+      - sentence-transformers==5.2.3
+      - wordcloud==1.9.6
+      - ruff==0.15.2
+      - pre-commit==4.5.1
