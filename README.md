@@ -4,19 +4,53 @@ Unsupervised clustering analysis of 181k+ AI research papers from ArXiv to disco
 
 ## What This Project Does
 
-<!-- TODO: fill after analysis is complete -->
+Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters them into 43 research topics using unsupervised learning, and identifies which areas are growing or declining. The pipeline:
+
+1. **Collects** papers from 8 ArXiv CS categories via the ArXiv API
+2. **Embeds** abstracts using TF-IDF, MiniLM, and KaLM sentence transformers
+3. **Reduces** dimensionality with SVD + UMAP (tuned via hyperparameter experiment)
+4. **Clusters** using K-Means, GMM, and HDBSCAN (9 combinations compared)
+5. **Validates** clusters against ArXiv categories and cross-embedding agreement
+6. **Measures growth** using Poisson regression controlling for overall ArXiv growth
+7. **Delivers** strategic recommendations backed by statistical significance
 
 ## Key Findings
 
-<!-- TODO: fill after analysis is complete -->
+**13 of 43 research areas are gaining share. 21 are losing share. AI research is concentrating.**
+
+### Fastest Growing (share growth, p < 0.05)
+| Research Area | Papers | Growth %/month |
+|---------------|--------|----------------|
+| LLM Reasoning Optimization | 3,193 | +7.72% |
+| LLM Agents and Decision-Making | 2,285 | +5.45% |
+| AI Safety and Adversarial Robustness | 2,885 | +2.12% |
+| AI for Molecular and Biological Discovery | 1,778 | +1.82% |
+| Medical AI and Image Segmentation | 10,222 | +1.06% |
+
+### Fastest Declining
+| Research Area | Papers | Growth %/month |
+|---------------|--------|----------------|
+| Domain Adaptation and Object Detection | 1,458 | -3.09% |
+| Graph Neural Networks | 2,799 | -2.82% |
+| 3D Point Cloud Perception | 1,759 | -2.13% |
+| Bias and Fairness in Language Models | 1,100 | -1.91% |
+| Federated Learning | 3,620 | -1.85% |
+
+### Noise Analysis
+- 64.5% of papers assigned to 43 main clusters
+- 17.8% are small niche topics below the clustering threshold
+- 17.7% are genuinely interdisciplinary papers
 
 ## Method
 
 - 3 embedding types (TF-IDF, MiniLM, KaLM) x 3 clustering algorithms (K-Means, GMM, HDBSCAN) = 9 combinations
-- UMAP dimensionality reduction with hyperparameter tuning
+- UMAP dimensionality reduction with hyperparameter tuning (40d won over 20d)
 - Evaluated with silhouette, Davies-Bouldin, Calinski-Harabasz, and topic coherence (c_v)
 - Validated with ARI/NMI against ArXiv categories and cross-embedding agreement
-- Growth trends tested with linear regression, sensitivity analysis, and seasonality normalization
+- Growth trends measured with Poisson regression (offset by total monthly volume)
+- All reported trends are statistically significant (p < 0.05)
+
+**Best combination:** KaLM embeddings + HDBSCAN (43 clusters, silhouette 0.499, 35.5% noise)
 
 ## Project Structure
 
@@ -43,7 +77,7 @@ figures/           — Exported visualizations
 ## Getting Started
 
 ```bash
-git clone https://github.com/your-username/arxiv-ai-trends.git
+git clone https://github.com/dinosmuc/arxiv-ai-trends.git
 cd arxiv-ai-trends
 
 conda env create -f environment.yml
