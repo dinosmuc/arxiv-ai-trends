@@ -13,6 +13,7 @@ plotly==6.5.2
 # Text processing
 spacy==3.8.11
 sentence-transformers==5.2.3
+langdetect==1.0.9
 gensim==4.4.0
 wordcloud==1.9.6
 
