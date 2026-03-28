@@ -14,6 +14,7 @@ plotly==6.5.2
 spacy==3.8.11
 sentence-transformers==5.2.3
 langdetect==1.0.9
+matplotlib-venn==1.1.2
 gensim==4.4.0
 wordcloud==1.9.6
 

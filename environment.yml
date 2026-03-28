@@ -17,6 +17,7 @@ dependencies:
   - spacy=3.8.11
   - gensim=4.4.0
   - langdetect=1.0.9
+  - matplotlib-venn=1.1.2
   # Dimensionality reduction & clustering
   - umap-learn=0.5.11
   - hdbscan=0.8.41
