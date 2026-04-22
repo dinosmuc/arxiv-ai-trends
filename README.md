@@ -4,7 +4,7 @@ Unsupervised clustering analysis of 181k+ AI research papers from ArXiv to disco
 
 ## What This Project Does
 
-Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters them into 43 research topics using unsupervised learning, and identifies which areas are growing or declining. The pipeline:
+Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters them into 39 research topics using unsupervised learning, and identifies which areas are growing or declining. The pipeline:
 
 1. **Collects** papers from 8 ArXiv CS categories via the ArXiv API
 2. **Embeds** abstracts using TF-IDF, MiniLM, and KaLM sentence transformers
@@ -16,30 +16,32 @@ Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters
 
 ## Key Findings
 
-**13 of 43 research areas are gaining share. 21 are losing share. AI research is concentrating.**
+**13 of 39 research areas are gaining share. 17 are losing share. AI research is concentrating.**
 
 ### Fastest Growing (share growth, p < 0.05)
 | Research Area | Papers | Growth %/month |
 |---------------|--------|----------------|
-| LLM Reasoning Optimization | 3,193 | +7.72% |
-| LLM Agents and Decision-Making | 2,285 | +5.45% |
-| AI Safety and Adversarial Robustness | 2,885 | +2.12% |
-| AI for Molecular and Biological Discovery | 1,778 | +1.82% |
-| Medical AI and Image Segmentation | 10,222 | +1.06% |
+| AI Agents: Frameworks and Evaluation | 1,994 | +4.77% |
+| LLM Reasoning and Reinforcement Learning | 5,037 | +4.65% |
+| LLM Safety and Content Moderation | 2,714 | +1.92% |
+| AI for Molecular and Biological Sciences | 1,837 | +1.74% |
+| Video Understanding and Reasoning | 1,573 | +1.72% |
+| AI in Medical Image Analysis | 13,129 | +0.56% |
+| Robot Learning and Embodied AI | 11,898 | +0.56% |
 
 ### Fastest Declining
 | Research Area | Papers | Growth %/month |
 |---------------|--------|----------------|
-| Domain Adaptation and Object Detection | 1,458 | -3.09% |
-| Graph Neural Networks | 2,799 | -2.82% |
-| 3D Point Cloud Perception | 1,759 | -2.13% |
-| Bias and Fairness in Language Models | 1,100 | -1.91% |
-| Federated Learning | 3,620 | -1.85% |
+| Graph Neural Networks Research | 2,734 | -2.71% |
+| 3D Point Cloud Perception Methods | 1,891 | -2.18% |
+| Adversarial Attacks and Robustness | 2,019 | -1.82% |
+| Federated Learning Privacy and Optimization | 4,348 | -1.55% |
+| Robot Localization and Odometry Systems | 1,685 | -1.54% |
 
-### Noise Analysis
-- 64.5% of papers assigned to 43 main clusters
-- 17.8% are small niche topics below the clustering threshold
-- 17.7% are genuinely interdisciplinary papers
+### Noise Decomposition
+- **64.3%** of papers assigned to 39 main clusters
+- **18.1%** are small niche topics below the clustering threshold (e.g. financial AI, continual learning, traffic modeling)
+- **17.5%** are genuinely interdisciplinary papers
 
 ## Method
 
@@ -50,7 +52,7 @@ Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters
 - Growth trends measured with Poisson regression (offset by total monthly volume)
 - All reported trends are statistically significant (p < 0.05)
 
-**Best combination:** KaLM embeddings + HDBSCAN (43 clusters, silhouette 0.499, 35.5% noise)
+**Best combination:** KaLM embeddings + HDBSCAN (39 clusters, silhouette 0.493, Davies-Bouldin 0.722, 35.7% noise)
 
 ## Project Structure
 
