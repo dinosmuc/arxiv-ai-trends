@@ -18,6 +18,10 @@ Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters
 
 **13 of 39 research areas are gaining share. 17 are losing share. AI research is concentrating.**
 
+![Cluster size vs growth](figures/size_vs_growth_bubble.png)
+
+*Each bubble is a research area. X-axis: monthly share growth. Y-axis: cluster size. Top-right quadrant = large and accelerating (safe bets); top-left = large and cooling (legacy); bottom-right = small and accelerating (emerging plays).*
+
 ### Fastest Growing (share growth, p < 0.05)
 | Research Area | Papers | Growth %/month |
 |---------------|--------|----------------|
@@ -38,6 +42,8 @@ Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters
 | Federated Learning Privacy and Optimization | 4,348 | -1.55% |
 | Robot Localization and Odometry Systems | 1,685 | -1.54% |
 
+![Share growth rankings](figures/share_growth_chart.png)
+
 ### Noise Decomposition
 - **64.3%** of papers assigned to 39 main clusters
 - **18.1%** are small niche topics below the clustering threshold (e.g. financial AI, continual learning, traffic modeling)
@@ -53,6 +59,8 @@ Collects 181,294 AI research papers from ArXiv (Jan 2024 – Feb 2026), clusters
 - All reported trends are statistically significant (p < 0.05)
 
 **Best combination:** KaLM embeddings + HDBSCAN (39 clusters, silhouette 0.493, Davies-Bouldin 0.722, 35.7% noise)
+
+![Clustering metric comparison across 9 combinations](figures/metric_comparison.png)
 
 ## Project Structure
 
