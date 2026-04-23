@@ -36,3 +36,6 @@ jupyterlab==4.5.4
 # Code quality
 ruff==0.15.2
 pre-commit==4.5.1
+
+# Testing
+pytest==9.0.2

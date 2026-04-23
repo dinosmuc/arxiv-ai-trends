@@ -29,6 +29,8 @@ dependencies:
   # Environment
   - python-dotenv=1.2.2
   - jupyterlab=4.5.4
+  # Testing
+  - pytest=9.0.2
   # Pip-only packages
   - pip
   - pip:
